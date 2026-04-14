@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation des Experts - AgriSmart Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-gradient {
+            background: linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #581c87 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge {
+            transition: all 0.2s ease;
+        }
+        
+        .validate-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .validate-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        
+        .reject-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .reject-btn:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header Admin -->
+    <div class="admin-gradient shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-user-shield text-white text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-white">Administration AgriSmart</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'monapp:index' %}" class="text-white/80 hover:text-white transition-colors">
+                        <i class="fas fa-home mr-2"></i>Retour au site
+                    </a>
+                    <a href="{% url 'admin:index' %}" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-cog mr-2"></i>Admin Django
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+            {% for message in messages %}
+                <div class="bg-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% elif message.tags == 'warning' %}yellow{% else %}blue{% endif %}-50 border-l-4 border-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% elif message.tags == 'warning' %}yellow{% else %}blue{% endif %}-400 p-4 mb-4 rounded-lg">
+                    <div class="flex">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle text-green{% elif message.tags == 'error' %}fa-exclamation-triangle text-red{% elif message.tags == 'warning' %}fa-exclamation-triangle text-yellow{% else %}fa-info-circle text-blue{% endif %}-400 mr-3 mt-1"></i>
+                        <p class="text-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% elif message.tags == 'warning' %}yellow{% else %}blue{% endif %}-700 font-medium">{{ message }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Contenu Principal -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Statistiques -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users text-blue-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Experts</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_experts }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Experts Validés</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ experts_valides_count }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock text-orange-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">En Attente</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ experts_attente_count }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-percentage text-purple-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Taux Validation</p>
+                        <p class="text-2xl font-bold text-gray-900">
+                            {% if total_experts > 0 %}
+                                {{ experts_valides_count|floatformat:0 }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Experts en attente de validation -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+            <div class="bg-orange-500 px-6 py-4">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-clock mr-3"></i>
+                    Experts en attente de validation ({{ experts_attente_count }})
+                </h2>
+            </div>
+            
+            {% if experts_en_attente %}
+                <div class="divide-y divide-gray-200">
+                    {% for expert in experts_en_attente %}
+                        <div class="p-6 card-hover">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-3">
+                                        <div class="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                                            {% if expert.photo %}
+                                                <img src="{{ expert.photo.url }}" alt="{{ expert.nom_complet }}" class="h-12 w-12 rounded-full object-cover">
+                                            {% else %}
+                                                <i class="fas fa-user-graduate text-purple-600 text-xl"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-gray-900">{{ expert.nom_complet }}</h3>
+                                            <p class="text-sm text-gray-500">{{ expert.email }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Spécialité:</span>
+                                            <p class="text-sm text-gray-900">{{ expert.get_specialite_display }}</p>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Expérience:</span>
+                                            <p class="text-sm text-gray-900">{{ expert.get_experience_display }}</p>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Statut:</span>
+                                            <p class="text-sm text-gray-900">{{ expert.get_statut_professionnel_display }}</p>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Localisation:</span>
+                                            <p class="text-sm text-gray-900">{{ expert.localisation|default:"Non renseigné" }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if expert.formation %}
+                                        <div class="mb-3">
+                                            <span class="text-sm font-medium text-gray-500">Formation:</span>
+                                            <p class="text-sm text-gray-900">{{ expert.formation }}</p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if expert.certifications %}
+                                        <div class="mb-3">
+                                            <span class="text-sm font-medium text-gray-500">Certifications:</span>
+                                            <p class="text-sm text-gray-900">{{ expert.certifications }}</p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if expert.bio %}
+                                        <div class="mb-3">
+                                            <span class="text-sm font-medium text-gray-500">Présentation:</span>
+                                            <p class="text-sm text-gray-900">{{ expert.bio|truncatewords:30 }}</p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="text-xs text-gray-400">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        Inscrit le {{ expert.date_inscription|date:"d/m/Y à H:i" }}
+                                    </div>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="flex flex-col space-y-2 ml-6">
+                                    <form method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="expert_id" value="{{ expert.id }}">
+                                        <input type="hidden" name="action" value="valider">
+                                        <button type="submit" class="validate-btn text-white px-4 py-2 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-200">
+                                            <i class="fas fa-check mr-2"></i>Valider
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="expert_id" value="{{ expert.id }}">
+                                        <input type="hidden" name="action" value="rejeter">
+                                        <button type="submit" class="reject-btn text-white px-4 py-2 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-200" onclick="return confirm('Êtes-vous sûr de vouloir rejeter cet expert ?')">
+                                            <i class="fas fa-times mr-2"></i>Rejeter
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="p-8 text-center">
+                    <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun expert en attente</h3>
+                    <p class="text-gray-500">Tous les experts ont été traités !</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Experts récemment validés -->
+        {% if experts_valides %}
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-green-500 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-check-circle mr-3"></i>
+                        Experts récemment validés
+                    </h2>
+                </div>
+                
+                <div class="divide-y divide-gray-200">
+                    {% for expert in experts_valides %}
+                        <div class="p-4 flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                                    {% if expert.photo %}
+                                        <img src="{{ expert.photo.url }}" alt="{{ expert.nom_complet }}" class="h-10 w-10 rounded-full object-cover">
+                                    {% else %}
+                                        <i class="fas fa-user-graduate text-green-600"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">{{ expert.nom_complet }}</h4>
+                                    <p class="text-sm text-gray-500">{{ expert.get_specialite_display }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Validé
+                                </span>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    {{ expert.date_verification|date:"d/m/Y" }}
+                                </p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Confirmation pour les actions de validation/rejet
+        document.addEventListener('DOMContentLoaded', function() {
+            const validateButtons = document.querySelectorAll('.validate-btn');
+            const rejectButtons = document.querySelectorAll('.reject-btn');
+            
+            validateButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (!confirm('Êtes-vous sûr de vouloir valider cet expert ?')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        });
+
+        // Auto-refresh toutes les 30 secondes pour voir les nouvelles demandes
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

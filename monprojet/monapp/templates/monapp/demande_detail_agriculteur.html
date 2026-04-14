@@ -1,0 +1,323 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détail de la demande - AgriSmart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .status-en_attente {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-acceptee {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-en_cours {
+            background-color: #ede9fe;
+            color: #7c3aed;
+        }
+        
+        .status-terminee {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-refusee {
+            background-color: #fecaca;
+            color: #dc2626;
+        }
+        
+        .urgence-faible {
+            background-color: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .urgence-normale {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .urgence-elevee {
+            background-color: #fed7aa;
+            color: #c2410c;
+        }
+        
+        .urgence-critique {
+            background-color: #fecaca;
+            color: #dc2626;
+        }
+        
+        .star-rating {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .star {
+            cursor: pointer;
+            color: #d1d5db;
+            transition: color 0.2s;
+        }
+        
+        .star:hover,
+        .star.selected {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-leaf text-2xl"></i>
+                    <h1 class="text-xl font-bold">AgriSmart</h1>
+                </div>
+                <nav class="flex items-center space-x-4">
+                    <a href="{% url 'monapp:mes_demandes_experts' %}" class="hover:text-green-200 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>Retour à mes demandes
+                    </a>
+                    <a href="{% url 'monapp:index' %}" class="hover:text-green-200 transition-colors">Accueil</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- En-tête de la demande -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ demande.sujet }}</h1>
+                        <div class="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>
+                                <i class="fas fa-calendar mr-1"></i>
+                                Créée le {{ demande.date_creation|date:"d/m/Y à H:i" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-tag mr-1"></i>
+                                {{ demande.get_domaine_demande_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end space-y-2">
+                        <span class="status-badge status-{{ demande.statut }}">
+                            <i class="fas fa-circle mr-2" style="font-size: 0.5rem;"></i>
+                            {{ demande.get_statut_display }}
+                        </span>
+                        <span class="status-badge urgence-{{ demande.urgence }}">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            {{ demande.get_urgence_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Expert assigné -->
+                {% if demande.expert %}
+                <div class="border-t pt-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Expert assigné</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            {% if demande.expert.photo %}
+                                <img src="{{ demande.expert.photo.url }}" alt="{{ demande.expert.nom_complet }}" 
+                                     class="w-12 h-12 rounded-full object-cover">
+                            {% else %}
+                                <i class="fas fa-user-tie text-green-600 text-xl"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ demande.expert.nom_complet }}</p>
+                            <p class="text-sm text-gray-600">{{ demande.expert.get_specialite_display }}</p>
+                            {% if demande.expert.note_moyenne > 0 %}
+                                <div class="flex items-center text-sm text-yellow-600">
+                                    <i class="fas fa-star mr-1"></i>
+                                    {{ demande.expert.note_moyenne|floatformat:1 }}/5
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Votre demande -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-question-circle text-blue-600 mr-2"></i>
+                        Votre demande
+                    </h2>
+                    <div class="prose prose-gray max-w-none">
+                        <p class="whitespace-pre-wrap">{{ demande.description }}</p>
+                    </div>
+                </div>
+
+                <!-- Réponse de l'expert -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-reply text-green-600 mr-2"></i>
+                        Réponse de l'expert
+                    </h2>
+                    
+                    {% if demande.reponse %}
+                        <div class="mb-4">
+                            <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-check-circle text-green-400"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-green-700 whitespace-pre-wrap">{{ demande.reponse }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if demande.date_reponse %}
+                                <p class="text-xs text-gray-500 mt-2">
+                                    Répondue le {{ demande.date_reponse|date:"d/m/Y à H:i" }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            {% if demande.statut == 'en_attente' %}
+                                <i class="fas fa-clock text-yellow-400 text-3xl mb-4"></i>
+                                <p class="text-gray-600">En attente d'acceptation par un expert</p>
+                            {% elif demande.statut == 'acceptee' %}
+                                <i class="fas fa-hourglass-half text-blue-400 text-3xl mb-4"></i>
+                                <p class="text-gray-600">L'expert prépare sa réponse...</p>
+                            {% elif demande.statut == 'en_cours' %}
+                                <i class="fas fa-cog fa-spin text-purple-400 text-3xl mb-4"></i>
+                                <p class="text-gray-600">Traitement en cours par l'expert</p>
+                            {% else %}
+                                <i class="fas fa-envelope text-gray-400 text-3xl mb-4"></i>
+                                <p class="text-gray-600">Aucune réponse pour le moment</p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Évaluation (si consultation terminée) -->
+            {% if peut_evaluer %}
+            <div class="bg-white rounded-xl shadow-lg p-6 mt-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-star text-yellow-500 mr-2"></i>
+                    Évaluez cette consultation
+                </h2>
+                
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="evaluer">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Note de satisfaction (1 à 5 étoiles)
+                        </label>
+                        <div class="star-rating" id="starRating">
+                            {% for i in "12345" %}
+                                <i class="fas fa-star star text-2xl" data-rating="{{ i }}"></i>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="note_satisfaction" id="ratingInput" required>
+                    </div>
+                    
+                    <div>
+                        <label for="commentaire" class="block text-sm font-medium text-gray-700 mb-2">
+                            Commentaire (optionnel)
+                        </label>
+                        <textarea name="commentaire_satisfaction" id="commentaire" rows="3" 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                  placeholder="Partagez votre expérience avec cette consultation..."></textarea>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Envoyer mon évaluation
+                    </button>
+                </form>
+            </div>
+            {% elif demande.note_satisfaction %}
+            <!-- Affichage de l'évaluation déjà donnée -->
+            <div class="bg-gray-50 rounded-xl p-6 mt-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                    Votre évaluation
+                </h2>
+                <div class="flex items-center space-x-4">
+                    <div class="flex">
+                        {% for i in "12345" %}
+                            <i class="fas fa-star {% if forloop.counter <= demande.note_satisfaction %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
+                        {% endfor %}
+                    </div>
+                    <span class="text-sm text-gray-600">{{ demande.note_satisfaction }}/5</span>
+                </div>
+                {% if demande.commentaire_satisfaction %}
+                    <p class="mt-3 text-gray-700">{{ demande.commentaire_satisfaction }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- JavaScript pour les étoiles -->
+    <script>
+        // Gestion du système d'étoiles
+        const stars = document.querySelectorAll('.star');
+        const ratingInput = document.getElementById('ratingInput');
+        let selectedRating = 0;
+
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                selectedRating = parseInt(this.dataset.rating);
+                ratingInput.value = selectedRating;
+                updateStars();
+            });
+
+            star.addEventListener('mouseover', function() {
+                const hoverRating = parseInt(this.dataset.rating);
+                highlightStars(hoverRating);
+            });
+        });
+
+        document.getElementById('starRating').addEventListener('mouseleave', function() {
+            updateStars();
+        });
+
+        function highlightStars(rating) {
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('selected');
+                } else {
+                    star.classList.remove('selected');
+                }
+            });
+        }
+
+        function updateStars() {
+            highlightStars(selectedRating);
+        }
+    </script>
+</body>
+</html>

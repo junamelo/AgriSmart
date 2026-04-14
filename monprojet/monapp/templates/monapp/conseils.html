@@ -1,0 +1,326 @@
+{% load static %}
+{% load conseils_extras %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conseils Agricoles Personnalisés - AgriSmart</title>
+    <link rel="stylesheet" href="{% static 'monapp/css/style.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header/Navigation -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-leaf text-green-500 text-2xl"></i>
+                <h1 class="text-xl font-bold text-gray-800">AgriSmart</h1>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <a href="{% url 'monapp:index' %}" class="nav-link text-gray-700 hover:text-green-600">Accueil</a>
+                <a href="{% url 'monapp:conseils' %}" class="nav-link text-green-600 font-bold">Conseils</a>
+                <a href="{% url 'monapp:calendrier' %}" class="nav-link text-gray-700 hover:text-green-600">Calendrier</a>
+                <a href="{% url 'monapp:meteo' %}" class="nav-link text-gray-700 hover:text-green-600">Météo</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'monapp:compte' %}" class="nav-link text-gray-700 hover:text-green-600">Mon Compte</a>
+                {% else %}
+                    <a href="{% url 'monapp:auth' %}" class="nav-link text-gray-700 hover:text-green-600">Connexion</a>
+                {% endif %}
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden text-gray-700">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+        </div>
+        <!-- Menu mobile -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white py-2 px-4 shadow-lg">
+            <a href="{% url 'monapp:index' %}" class="block py-2 text-gray-700 hover:text-green-600">Accueil</a>
+            <a href="{% url 'monapp:conseils' %}" class="block py-2 text-green-600 font-bold">Conseils</a>
+            <a href="{% url 'monapp:calendrier' %}" class="block py-2 text-gray-700 hover:text-green-600">Calendrier</a>
+            <a href="{% url 'monapp:meteo' %}" class="block py-2 text-gray-700 hover:text-green-600">Météo</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'monapp:compte' %}" class="block py-2 text-gray-700 hover:text-green-600">Mon Compte</a>
+            {% else %}
+                <a href="{% url 'monapp:auth' %}" class="block py-2 text-gray-700 hover:text-green-600">Connexion</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="py-8">
+        <div class="container mx-auto px-4">
+            <!-- En-tête avec informations utilisateur -->
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-lightbulb text-green-500"></i> 
+                    Conseils Agricoles Personnalisés
+                </h2>
+                {% if user.is_authenticated and cultures_utilisateur %}
+                    <p class="text-gray-600 mb-4">Conseils adaptés à vos cultures :</p>
+                    <div class="flex flex-wrap justify-center gap-2 mb-6">
+                        {% for culture in cultures_utilisateur %}
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                <i class="fas fa-seedling"></i> {{ culture.nom }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                {% elif not user.is_authenticated %}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+                        <i class="fas fa-info-circle text-blue-500"></i>
+                        <strong>Astuce :</strong> Connectez-vous et sélectionnez vos cultures pour recevoir des conseils personnalisés !
+                        <a href="{% url 'monapp:auth' %}" class="text-blue-600 hover:underline ml-2">Se connecter</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Système de Filtrage -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-filter text-green-500"></i> Filtres de Recherche
+                </h3>
+                <form method="GET" id="filtreForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Filtre par Culture -->
+                        <div>
+                            <label for="culture" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-seedling text-green-500"></i> Filtrer par Culture
+                            </label>
+                            <select name="culture" id="culture" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="">-- Toutes {% if cultures_utilisateur %}mes{% endif %} cultures --</option>
+                                {% for culture in cultures_pour_filtre %}
+                                    <option value="{{ culture.id }}" 
+                                            {% if culture.id|stringformat:"s" == culture_selectionnee %}selected{% endif %}>
+                                        {{ culture.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Filtre par Type de Conseil -->
+                        <div>
+                            <label for="theme" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tools text-blue-500"></i> Type de Conseil
+                            </label>
+                            <select name="theme" id="theme" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="">-- Tous les types --</option>
+                                {% for theme_code, theme_label in themes_conseils %}
+                                    <option value="{{ theme_code }}" 
+                                            {% if theme_code == theme_selectionne %}selected{% endif %}>
+                                        {{ theme_label }}
+                                        {% if conseils_counts %}
+                                            ({{ conseils_counts|lookup:theme_code|default:0 }})
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Recherche textuelle -->
+                        <div>
+                            <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-search text-purple-500"></i> Recherche
+                            </label>
+                            <input type="text" name="q" id="search" value="{{ search_query }}" 
+                                   placeholder="Rechercher dans les conseils..." 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3 pt-4">
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md transition duration-200">
+                            <i class="fas fa-search"></i> Rechercher
+                        </button>
+                        <a href="{% url 'monapp:conseils' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition duration-200">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </a>
+                        {% if is_filtered %}
+                            <span class="bg-blue-100 text-blue-800 px-3 py-2 rounded-md text-sm">
+                                <i class="fas fa-info-circle"></i> {{ total_conseils }} conseil(s) trouvé(s)
+                            </span>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+
+            <!-- Affichage des Conseils -->
+            <div id="conseilsContainer">
+                {% if conseils %}
+                    {% if conseils_organises %}
+                        <!-- Affichage organisé par catégorie -->
+                        {% for categorie, conseils_cat in conseils_organises.items %}
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-bold text-green-700 border-b-2 border-green-200 pb-2 mb-6">
+                                <i class="fas fa-tools"></i> {{ categorie }}
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {% for conseil in conseils_cat %}
+                                <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition duration-200 overflow-hidden">
+                                    <div class="p-6">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <h4 class="text-lg font-semibold text-gray-800 leading-tight">{{ conseil.titre }}</h4>
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium ml-2 whitespace-nowrap">
+                                                {{ conseil.type_culture.nom }}
+                                            </span>
+                                        </div>
+                                        <p class="text-gray-600 text-sm mb-4 line-clamp-3">
+                                            {{ conseil.contenu|truncatewords:25 }}
+                                        </p>
+                                        <div class="flex justify-between items-center text-xs text-gray-500 mb-3">
+                                            <span>
+                                                <i class="fas fa-user"></i> 
+                                                {% if conseil.auteur %}{{ conseil.auteur }}{% else %}AgriSmart{% endif %}
+                                            </span>
+                                            <span>
+                                                <i class="fas fa-calendar"></i> 
+                                                {{ conseil.date_creation|date:"d/m/Y" }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                                {{ conseil.get_niveau_difficulte_display }}
+                                            </span>
+                                            <a href="{% url 'monapp:conseil_detail' conseil.id %}" 
+                                               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition duration-200">
+                                                <i class="fas fa-eye"></i> Lire plus
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Affichage simple -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for conseil in conseils %}
+                            <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition duration-200 overflow-hidden">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <h4 class="text-lg font-semibold text-gray-800">{{ conseil.titre }}</h4>
+                                        <div class="flex flex-col gap-1">
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                                                {{ conseil.type_culture.nom }}
+                                            </span>
+                                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                                {{ conseil.get_theme_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-600 text-sm mb-4">
+                                        {{ conseil.contenu|truncatewords:25 }}
+                                    </p>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-gray-500">
+                                            <i class="fas fa-calendar"></i> {{ conseil.date_creation|date:"d/m/Y" }}
+                                        </span>
+                                        <a href="{% url 'monapp:conseil_detail' conseil.id %}" 
+                                           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition duration-200">
+                                            Lire plus
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Pagination -->
+                    {% if conseils.has_other_pages %}
+                    <div class="flex justify-center mt-8">
+                        <nav class="flex space-x-2">
+                            {% if conseils.has_previous %}
+                                <a href="?page={{ conseils.previous_page_number }}{% if culture_selectionnee %}&culture={{ culture_selectionnee }}{% endif %}{% if theme_selectionne %}&theme={{ theme_selectionne }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                                   class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded">
+                                    <i class="fas fa-chevron-left"></i> Précédent
+                                </a>
+                            {% endif %}
+                            
+                            <span class="bg-green-600 text-white px-4 py-2 rounded">
+                                Page {{ conseils.number }} sur {{ conseils.paginator.num_pages }}
+                            </span>
+                            
+                            {% if conseils.has_next %}
+                                <a href="?page={{ conseils.next_page_number }}{% if culture_selectionnee %}&culture={{ culture_selectionnee }}{% endif %}{% if theme_selectionne %}&theme={{ theme_selectionne }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                                   class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded">
+                                    Suivant <i class="fas fa-chevron-right"></i>
+                                </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <!-- Aucun conseil trouvé -->
+                    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+                        <i class="fas fa-search text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">Aucun conseil trouvé</h3>
+                        {% if is_filtered %}
+                            <p class="text-gray-500 mb-6">Aucun conseil ne correspond à vos critères de recherche.</p>
+                            <a href="{% url 'monapp:conseils' %}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200">
+                                <i class="fas fa-eye"></i> Voir tous les conseils
+                            </a>
+                        {% elif not user.is_authenticated %}
+                            <p class="text-gray-500 mb-6">Connectez-vous pour voir des conseils personnalisés selon vos cultures.</p>
+                            <a href="{% url 'monapp:auth' %}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200">
+                                <i class="fas fa-sign-in-alt"></i> Se connecter
+                            </a>
+                        {% elif not cultures_utilisateur %}
+                            <p class="text-gray-500 mb-6">Ajoutez des cultures à votre profil pour recevoir des conseils personnalisés.</p>
+                            <a href="{% url 'monapp:compte' %}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200">
+                                <i class="fas fa-user-edit"></i> Modifier mon profil
+                            </a>
+                        {% else %}
+                            <p class="text-gray-500 mb-6">Il n'y a pas encore de conseils pour vos cultures. Revenez bientôt !</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript pour les interactions -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Menu mobile
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            // Filtrage automatique
+            const cultureSelect = document.getElementById('culture');
+            const themeSelect = document.getElementById('theme');
+            
+            if (cultureSelect) {
+                cultureSelect.addEventListener('change', function() {
+                    document.getElementById('filtreForm').submit();
+                });
+            }
+            
+            if (themeSelect) {
+                themeSelect.addEventListener('change', function() {
+                    document.getElementById('filtreForm').submit();
+                });
+            }
+
+            // Recherche en temps réel (optionnel)
+            const searchInput = document.getElementById('search');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(function() {
+                        // Auto-submit après 500ms d'inactivité
+                        // document.getElementById('filtreForm').submit();
+                    }, 500);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

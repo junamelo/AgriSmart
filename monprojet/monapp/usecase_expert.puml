@@ -1,0 +1,18 @@
+@startuml
+left to right direction
+actor Expert
+
+usecase "S'authentifier" as Auth
+
+Expert --> (Répondre aux questions des agriculteurs)
+Expert --> (Gérer son profil d'expert)
+Expert --> (Consulter les questions en attente)
+Expert --> (Consulter l'historique de ses réponses)
+Expert --> (Recevoir notifications)
+
+Auth ..> (Répondre aux questions des agriculteurs) : <<include>>
+Auth ..> (Gérer son profil d'expert) : <<include>>
+Auth ..> (Consulter les questions en attente) : <<include>>
+Auth ..> (Consulter l'historique de ses réponses) : <<include>>
+Auth ..> (Recevoir notifications) : <<include>>
+@enduml

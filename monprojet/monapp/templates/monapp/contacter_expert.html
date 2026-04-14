@@ -1,0 +1,307 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacter {{ expert.nom_complet }} - AgriSmart</title>
+    <link rel="stylesheet" href="{% static 'monapp/css/style.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #10B981 0%, #047857 50%, #065F46 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .expert-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .form-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Navigation -->
+    <nav class="gradient-bg shadow-lg relative z-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{% url 'monapp:index' %}" class="text-white text-xl font-bold">
+                        <i class="fas fa-seedling mr-2"></i>AgriSmart
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'monapp:experts' %}" class="text-white hover:text-green-200 px-3 py-2 rounded transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>Retour aux experts
+                    </a>
+                    <a href="{% url 'monapp:compte' %}" class="text-white hover:text-green-200 px-3 py-2 rounded transition-colors">
+                        <i class="fas fa-user mr-2"></i>Mon compte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-6 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 border border-green-300 text-green-700{% elif message.tags == 'error' %}bg-red-100 border border-red-300 text-red-700{% endif %}">
+                    <div class="flex items-center">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-triangle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Profil de l'expert -->
+            <div class="lg:col-span-1">
+                <div class="expert-card rounded-xl shadow-xl p-6 sticky top-8">
+                    <!-- Photo de l'expert -->
+                    <div class="text-center mb-6">
+                        {% if expert.photo %}
+                            <img src="{{ expert.photo.url }}" alt="{{ expert.nom_complet }}" 
+                                 class="w-32 h-32 rounded-full mx-auto object-cover border-4 border-green-200">
+                        {% else %}
+                            <div class="w-32 h-32 bg-green-100 rounded-full mx-auto flex items-center justify-center border-4 border-green-200">
+                                <i class="fas fa-user-graduate text-4xl text-green-600"></i>
+                            </div>
+                        {% endif %}
+                        <h1 class="text-2xl font-bold text-gray-800 mt-4">{{ expert.nom_complet }}</h1>
+                        <p class="text-green-600 font-medium">{{ expert.get_specialite_display }}</p>
+                    </div>
+
+                    <!-- Informations professionnelles -->
+                    <div class="space-y-4 mb-6">
+                        <div class="flex items-center text-gray-700">
+                            <i class="fas fa-graduation-cap text-green-600 mr-3 w-5"></i>
+                            <span class="text-sm">{{ expert.get_statut_professionnel_display }}</span>
+                        </div>
+                        
+                        <div class="flex items-center text-gray-700">
+                            <i class="fas fa-clock text-green-600 mr-3 w-5"></i>
+                            <span class="text-sm">{{ expert.get_experience_display }} d'expérience</span>
+                        </div>
+                        
+                        {% if expert.localisation %}
+                        <div class="flex items-center text-gray-700">
+                            <i class="fas fa-map-marker-alt text-green-600 mr-3 w-5"></i>
+                            <span class="text-sm">{{ expert.localisation }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if expert.formation %}
+                        <div class="flex items-center text-gray-700">
+                            <i class="fas fa-certificate text-green-600 mr-3 w-5"></i>
+                            <span class="text-sm">{{ expert.formation }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Statistiques -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-green-50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold text-green-600">{{ demandes_traitees }}</div>
+                            <div class="text-sm text-gray-600">Demandes traitées</div>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-3 text-center">
+                            <div class="text-2xl font-bold text-blue-600">{{ demandes_en_cours }}</div>
+                            <div class="text-sm text-gray-600">En cours</div>
+                        </div>
+                    </div>
+
+                    <!-- Note moyenne -->
+                    {% if expert.note_moyenne > 0 %}
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-gray-700">Évaluation</span>
+                            <div class="flex items-center">
+                                {% for i in "12345" %}
+                                    <i class="fas fa-star {% if expert.note_moyenne >= forloop.counter %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
+                                {% endfor %}
+                                <span class="ml-2 text-sm text-gray-600">({{ expert.note_moyenne }}/5)</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Présentation -->
+                    {% if expert.bio %}
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-800 mb-2">Présentation</h3>
+                        <p class="text-gray-600 text-sm">{{ expert.bio }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Disponibilité -->
+                    <div class="flex items-center justify-center">
+                        {% if expert.disponible %}
+                            <div class="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
+                                <i class="fas fa-check-circle mr-2"></i>Disponible
+                            </div>
+                        {% else %}
+                            <div class="bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-medium">
+                                <i class="fas fa-times-circle mr-2"></i>Indisponible
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire de contact -->
+            <div class="lg:col-span-2">
+                <div class="form-container rounded-xl shadow-xl p-8">
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-4">
+                            Contacter {{ expert.nom_complet }}
+                        </h2>
+                        <p class="text-gray-600">
+                            Décrivez votre problème agricole et {{ expert.nom_complet }} vous fournira des conseils personnalisés.
+                        </p>
+                    </div>
+
+                    <form method="post" class="space-y-6">
+                        {% csrf_token %}
+                        
+                        <!-- Domaine de demande -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tags text-green-600 mr-2"></i>{{ form.domaine_demande.label }}
+                            </label>
+                            {{ form.domaine_demande }}
+                            {% if form.domaine_demande.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ form.domaine_demande.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Sujet -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-heading text-green-600 mr-2"></i>{{ form.sujet.label }}
+                            </label>
+                            {{ form.sujet }}
+                            {% if form.sujet.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ form.sujet.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-edit text-green-600 mr-2"></i>{{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.help_text %}
+                                <p class="text-gray-500 text-sm mt-1">{{ form.description.help_text }}</p>
+                            {% endif %}
+                            {% if form.description.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ form.description.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Urgence -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-exclamation-triangle text-green-600 mr-2"></i>{{ form.urgence.label }}
+                            </label>
+                            {{ form.urgence }}
+                            {% if form.urgence.help_text %}
+                                <p class="text-gray-500 text-sm mt-1">{{ form.urgence.help_text }}</p>
+                            {% endif %}
+                            {% if form.urgence.errors %}
+                                <p class="text-red-500 text-sm mt-1">{{ form.urgence.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Zone d'information -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                                <div>
+                                    <h4 class="font-semibold text-blue-800 mb-2">Informations importantes</h4>
+                                    <ul class="text-blue-700 text-sm space-y-1">
+                                        <li>• Votre demande sera envoyée directement à {{ expert.nom_complet }}</li>
+                                        <li>• L'expert vous contactera dans les meilleurs délais</li>
+                                        <li>• Vous pouvez suivre l'état de votre demande dans "Mes demandes"</li>
+                                        <li>• Soyez le plus précis possible pour obtenir une réponse adaptée</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="flex space-x-4 pt-6">
+                            <button type="submit" class="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                <i class="fas fa-paper-plane mr-3"></i>
+                                Envoyer ma demande
+                            </button>
+                            
+                            <a href="{% url 'monapp:experts' %}" class="flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-4 px-6 rounded-xl transition-all duration-300 border border-gray-300">
+                                <i class="fas fa-times mr-2"></i>
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Validation côté client
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const sujet = document.querySelector('input[name="sujet"]').value;
+            const description = document.querySelector('textarea[name="description"]').value;
+            
+            if (!sujet.trim()) {
+                e.preventDefault();
+                alert('Veuillez saisir le sujet de votre demande.');
+                document.querySelector('input[name="sujet"]').focus();
+                return false;
+            }
+            
+            if (!description.trim() || description.length < 20) {
+                e.preventDefault();
+                alert('Veuillez fournir une description détaillée (au moins 20 caractères).');
+                document.querySelector('textarea[name="description"]').focus();
+                return false;
+            }
+            
+            // Confirmation d'envoi
+            if (!confirm(`Voulez-vous envoyer cette demande à {{ expert.nom_complet }} ?`)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Changer le texte du bouton pendant l'envoi
+            const submitButton = e.submitter;
+            if (submitButton) {
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i>Envoi en cours...';
+                submitButton.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

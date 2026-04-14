@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+actor Agriculteur
+
+usecase "S'authentifier" as Auth
+
+Agriculteur --> (Consulter conseils agricoles)
+Agriculteur --> (Planifier activités agricoles)
+Agriculteur --> (Consulter météo agricole)
+Agriculteur --> (Poser une question à un expert)
+Agriculteur --> (Gérer son profil)
+Agriculteur --> (Recevoir une réponse d'expert)
+
+Auth ..> (Consulter conseils agricoles) : <<include>>
+Auth ..> (Planifier activités agricoles) : <<include>>
+Auth ..> (Consulter météo agricole) : <<include>>
+Auth ..> (Poser une question à un expert) : <<include>>
+Auth ..> (Gérer son profil) : <<include>>
+Auth ..> (Recevoir une réponse d'expert) : <<include>>
+@enduml

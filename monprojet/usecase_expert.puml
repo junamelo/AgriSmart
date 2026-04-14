@@ -1,0 +1,19 @@
+@startuml
+left to right direction
+actor Expert
+
+rectangle "Plateforme AgriSmart" {
+  Expert -- (Authentification)
+  Expert -- (Répondre aux questions des agriculteurs)
+  Expert -- (Consulter les questions en attente)
+  Expert -- (Gérer son profil d'expert)
+  Expert -- (Recevoir notifications/alertes)
+  Expert -- (Consulter l'historique de ses réponses)
+
+  (Répondre aux questions des agriculteurs) ..> (Authentification) : «include»
+  (Consulter les questions en attente) ..> (Authentification) : «include»
+  (Gérer son profil d'expert) ..> (Authentification) : «include»
+  (Recevoir notifications/alertes) ..> (Authentification) : «include»
+  (Consulter l'historique de ses réponses) ..> (Authentification) : «include»
+}
+@enduml

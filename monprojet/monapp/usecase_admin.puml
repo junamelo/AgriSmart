@@ -1,0 +1,19 @@
+@startuml
+left to right direction
+actor Admin
+
+
+usecase "S'authentifier" as Auth
+
+
+
+Admin --> (Valider ou refuser les inscriptions des experts)
+Admin --> (Gérer les utilisateurs)
+Admin --> (Gérer les contenus et conseils)
+Admin --> (Recevoir notifications/alertes)
+
+Auth ..> (Valider ou refuser les inscriptions des experts) : <<include>>
+Auth ..> (Gérer les utilisateurs) : <<include>>
+Auth ..> (Gérer les contenus et conseils) : <<include>>
+Auth ..> (Recevoir notifications/alertes) : <<include>>
+@enduml

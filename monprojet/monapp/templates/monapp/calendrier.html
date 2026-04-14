@@ -1,0 +1,971 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier Agricole - AgriSmart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'monapp/css/style.css' %}">
+    <style>
+        .calendar-day {
+            min-height: 120px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .calendar-day:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-color: #10b981;
+        }
+        
+        .calendar-activity {
+            background: #dcfce7;
+            border-left: 4px solid #16a34a;
+            border-radius: 4px;
+            margin: 2px 0;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .calendar-activity:hover {
+            background: #bbf7d0;
+        }
+        
+        .today {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+        
+        .other-month {
+            opacity: 0.5;
+        }
+        
+        .calendar-navigation {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .activity-form {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            z-index: 1000;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .form-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .form-slide-in {
+            animation: slideInUp 0.3s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .form-slide-out {
+            animation: slideOutDown 0.3s ease-in;
+        }
+        
+        @keyframes slideOutDown {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+        }
+        
+        .activity-indicator {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            background: #16a34a;
+            border-radius: 50%;
+        }
+        
+        .calendar-tooltip {
+            position: absolute;
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+    <!-- Header/Navigation -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <a href="{% url 'monapp:index' %}" class="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors">
+                    <i class="fas fa-leaf text-2xl"></i>
+                    <span class="text-xl font-bold">AgriSmart</span>
+                </a>
+                
+                <nav class="hidden md:flex space-x-6">
+                    <a href="{% url 'monapp:index' %}" class="text-gray-600 hover:text-green-600 transition-colors">Accueil</a>
+                    <a href="{% url 'monapp:conseils' %}" class="text-gray-600 hover:text-green-600 transition-colors">Conseils</a>
+                    <a href="{% url 'monapp:calendrier' %}" class="text-green-600 font-semibold border-b-2 border-green-600 pb-1">Calendrier</a>
+                    <a href="{% url 'monapp:meteo' %}" class="text-gray-600 hover:text-green-600 transition-colors">Météo</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'monapp:compte' %}" class="text-gray-600 hover:text-green-600 transition-colors">Mon Compte</a>
+                    {% else %}
+                        <a href="{% url 'monapp:login' %}" class="text-gray-600 hover:text-green-600 transition-colors">Connexion</a>
+                    {% endif %}
+                </nav>
+                
+                <button id="mobile-menu-button" class="md:hidden text-gray-600">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+                <a href="{% url 'monapp:index' %}" class="block py-2 px-4 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">Accueil</a>
+                <a href="{% url 'monapp:conseils' %}" class="block py-2 px-4 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">Conseils</a>
+                <a href="{% url 'monapp:calendrier' %}" class="block py-2 px-4 text-green-600 font-semibold bg-green-50 rounded">Calendrier</a>
+                <a href="{% url 'monapp:meteo' %}" class="block py-2 px-4 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">Météo</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'monapp:compte' %}" class="block py-2 px-4 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">Mon Compte</a>
+                {% else %}
+                    <a href="{% url 'monapp:login' %}" class="block py-2 px-4 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">Connexion</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Titre principal -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-calendar-alt mr-3 text-green-600"></i>
+                Calendrier Agricole
+            </h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                Planifiez et suivez vos activités agricoles
+            </p>
+        </div>
+
+        <!-- Messages Django -->
+        {% if messages %}
+        <div class="mb-8">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} bg-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-100 border border-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-400 text-{% if message.tags == 'success' %}green{% elif message.tags == 'error' %}red{% else %}blue{% endif %}-700 px-4 py-3 rounded mb-4 relative">
+                <span class="block sm:inline">{{ message }}</span>
+                <button type="button" class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.style.display='none';">
+                    <span class="sr-only">Fermer</span>
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Sélecteur de culture -->
+        {% if user.is_authenticated and cultures_utilisateur %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">
+                <i class="fas fa-seedling mr-2 text-green-600"></i>
+                Sélectionnez votre culture
+            </h3>
+            <div class="flex flex-wrap justify-center gap-2">
+                {% for culture in cultures_utilisateur %}
+                <button class="px-4 py-2 bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors font-medium" 
+                        data-culture-id="{{ culture.id }}">
+                    {{ culture.nom }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Navigation et calendrier -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <!-- En-tête du calendrier -->
+            <div class="calendar-navigation flex flex-col md:flex-row md:items-center md:justify-between p-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-seedling mr-2 text-green-600"></i>
+                        {{ culture_selectionnee.nom|default:"Maïs" }}
+                    </h2>
+                    <p class="text-gray-600">Calendrier des activités pour la culture du {{ culture_selectionnee.nom|lower|default:"maïs" }}</p>
+                </div>
+                <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                    <button id="prev-month" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-chevron-left mr-2"></i>Précédent
+                    </button>
+                    <div class="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold">
+                        <span id="current-month">{{ mois_actuel }}</span>
+                    </div>
+                    <button id="next-month" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        Suivant<i class="fas fa-chevron-right ml-2"></i>
+                    </button>
+                    {% if user.is_authenticated %}
+                    <button id="add-event" onclick="showAddActivityForm()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ml-4">
+                        <i class="fas fa-plus mr-2"></i>Ajouter activité
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Grille du calendrier -->
+            <div class="border-t border-gray-200">
+                <div id="calendar" class="grid grid-cols-7 gap-px bg-gray-200">
+                    <!-- En-têtes des jours -->
+                    <div class="bg-gray-50 p-4 text-center font-semibold text-gray-700">Dimanche</div>
+                    <div class="bg-gray-50 p-4 text-center font-semibold text-gray-700">Lundi</div>
+                    <div class="bg-gray-50 p-4 text-center font-semibold text-gray-700">Mardi</div>
+                    <div class="bg-gray-50 p-4 text-center font-semibold text-gray-700">Mercredi</div>
+                    <div class="bg-gray-50 p-4 text-center font-semibold text-gray-700">Jeudi</div>
+                    <div class="bg-gray-50 p-4 text-center font-semibold text-gray-700">Vendredi</div>
+                    <div class="bg-gray-50 p-4 text-center font-semibold text-gray-700">Samedi</div>
+                    <!-- Les jours du calendrier seront populés par JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section des activités -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+            <!-- Activités par défaut -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-calendar-check mr-3 text-green-600"></i>
+                    Activités Recommandées
+                </h3>
+                <div class="space-y-4">
+                    {% for activite in activites_defaut %}
+                    <div class="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        {% if activite.nom == 'Semis' %}
+                        <div class="flex-shrink-0 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="{{ activite.icone|default:'fas fa-seedling' }} text-white"></i>
+                        </div>
+                        {% elif activite.nom == 'Fertilisation' %}
+                        <div class="flex-shrink-0 w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="{{ activite.icone|default:'fas fa-leaf' }} text-white"></i>
+                        </div>
+                        {% elif activite.nom == 'Récolte' %}
+                        <div class="flex-shrink-0 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="{{ activite.icone|default:'fas fa-wheat-awn' }} text-white"></i>
+                        </div>
+                        {% else %}
+                        <div class="flex-shrink-0 w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="{{ activite.icone|default:'fas fa-calendar-check' }} text-white"></i>
+                        </div>
+                        {% endif %}
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 mb-1">{{ activite.nom }}</h4>
+                            <p class="text-gray-600 text-sm">{{ activite.description }}</p>
+                            {% if activite.periode %}
+                            {% if activite.nom == 'Semis' %}
+                            <span class="inline-block mt-2 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">
+                                {{ activite.periode }}
+                            </span>
+                            {% elif activite.nom == 'Fertilisation' %}
+                            <span class="inline-block mt-2 px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                                {{ activite.periode }}
+                            </span>
+                            {% elif activite.nom == 'Récolte' %}
+                            <span class="inline-block mt-2 px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                                {{ activite.periode }}
+                            </span>
+                            {% else %}
+                            <span class="inline-block mt-2 px-3 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
+                                {{ activite.periode }}
+                            </span>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <!-- Activités par défaut si aucune n'est définie -->
+                    <div class="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex-shrink-0 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-seedling text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 mb-1">Semis</h4>
+                            <p class="text-gray-600 text-sm">Période idéale: début saison des pluies</p>
+                            <span class="inline-block mt-2 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">
+                                Mars - Avril
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex-shrink-0 w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-tint text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 mb-1">Irrigation</h4>
+                            <p class="text-gray-600 text-sm">Arrosage régulier pour une croissance optimale</p>
+                            <span class="inline-block mt-2 px-3 py-1 bg-cyan-100 text-cyan-800 text-xs font-medium rounded-full">
+                                Hebdomadaire
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex-shrink-0 w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-tools text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 mb-1">Entretien</h4>
+                            <p class="text-gray-600 text-sm">Désherbage et application d'engrais</p>
+                            <span class="inline-block mt-2 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
+                                Mensuel
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-start p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex-shrink-0 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-wheat-awn text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900 mb-1">Récolte</h4>
+                            <p class="text-gray-600 text-sm">Période de récolte optimale</p>
+                            <span class="inline-block mt-2 px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                                Août - Septembre
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Activités personnalisées -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-user-cog mr-3 text-blue-600"></i>
+                        Mes Activités
+                    </h3>
+                    {% if user.is_authenticated %}
+                    <button onclick="showAddActivityForm()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                        <i class="fas fa-plus mr-2"></i>Ajouter
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="space-y-4" id="user-activities">
+                    {% for activite in activites_utilisateur %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-900 mb-1">{{ activite.type_activite }}</h4>
+                                <p class="text-gray-600 text-sm mb-2">{{ activite.description|default:"" }}</p>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <i class="fas fa-calendar mr-2"></i>
+                                    {{ activite.date_prevue|date:"d/m/Y" }}
+                                    {% if activite.type_activite == 'semis' %}
+                                    <span class="ml-4 px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs">
+                                        🌱 {{ activite.get_type_activite_display|default:"Semis" }}
+                                    </span>
+                                    {% elif activite.type_activite == 'fertilisation' %}
+                                    <span class="ml-4 px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                                        🌿 {{ activite.get_type_activite_display|default:"Fertilisation" }}
+                                    </span>
+                                    {% elif activite.type_activite == 'traitement' %}
+                                    <span class="ml-4 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
+                                        🚿 {{ activite.get_type_activite_display|default:"Traitement" }}
+                                    </span>
+                                    {% elif activite.type_activite == 'irrigation' %}
+                                    <span class="ml-4 px-2 py-1 bg-cyan-100 text-cyan-800 rounded-full text-xs">
+                                        💧 {{ activite.get_type_activite_display|default:"Irrigation" }}
+                                    </span>
+                                    {% elif activite.type_activite == 'entretien' %}
+                                    <span class="ml-4 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs">
+                                        🔧 {{ activite.get_type_activite_display|default:"Entretien" }}
+                                    </span>
+                                    {% elif activite.type_activite == 'recolte' %}
+                                    <span class="ml-4 px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs">
+                                        🌾 {{ activite.get_type_activite_display|default:"Récolte" }}
+                                    </span>
+                                    {% else %}
+                                    <span class="ml-4 px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
+                                        📋 {{ activite.get_type_activite_display|default:"Planifiée" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if user.is_authenticated %}
+                            <div class="flex space-x-2 ml-4">
+                                <button class="text-blue-600 hover:text-blue-800" onclick="editActivity({{ activite.id }})" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-red-600 hover:text-red-800" onclick="deleteActivity({{ activite.id }})" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 mb-4">
+                            <i class="fas fa-calendar-plus text-4xl"></i>
+                        </div>
+                        <p class="text-gray-500 mb-4">Aucune activité personnalisée</p>
+                        {% if user.is_authenticated %}
+                        <button onclick="showAddActivityForm()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Créer ma première activité
+                        </button>
+                        {% else %}
+                        <a href="{% url 'monapp:login' %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Se connecter pour ajouter
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Statistiques et conseils -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-chart-bar mr-3 text-purple-600"></i>
+                    Statistiques
+                </h3>
+                <div class="space-y-6">
+                    <!-- Statistiques -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-gray-800">{{ activites_utilisateur|length }}</div>
+                            <div class="text-sm text-gray-600">Activités planifiées</div>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-gray-800">{{ cultures_utilisateur|length|default:"1" }}</div>
+                            <div class="text-sm text-gray-600">Culture{{ cultures_utilisateur|length|pluralize }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Conseil du mois -->
+                    <div class="p-4 bg-green-50 border-l-4 border-green-400 rounded-lg">
+                        <h4 class="font-semibold text-green-800 mb-2">
+                            <i class="fas fa-lightbulb mr-2"></i>Conseil du mois
+                        </h4>
+                        <p class="text-green-700 text-sm">
+                            En {{ mois_actuel|default:"ce mois" }}, veillez à surveiller l'humidité du sol et ajustez l'irrigation selon les conditions météorologiques.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Overlay et formulaire d'ajout d'activité -->
+        {% if user.is_authenticated %}
+        <div class="form-overlay" id="form-overlay"></div>
+        <div class="activity-form" id="activity-form">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">
+                <i class="fas fa-calendar-plus mr-2"></i>
+                <span id="form-title">Ajouter une activité</span>
+            </h3>
+            
+            <form id="activity-form-element" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="activity-id" name="activity_id" value="">
+                
+                <div class="mb-4">
+                    <label for="event-title" class="block text-sm font-medium text-gray-700 mb-2">
+                        Type d'activité
+                    </label>
+                    <select id="event-title" name="type_activite" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="semis" data-color="emerald">🌱 Semis</option>
+                        <option value="fertilisation" data-color="purple">🌿 Fertilisation</option>
+                        <option value="traitement" data-color="red">🚿 Traitement</option>
+                        <option value="irrigation" data-color="cyan">💧 Irrigation</option>
+                        <option value="entretien" data-color="amber">🔧 Entretien</option>
+                        <option value="recolte" data-color="orange">🌾 Récolte</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="event-date" class="block text-sm font-medium text-gray-700 mb-2">
+                        Date planifiée
+                    </label>
+                    <input type="date" id="event-date" name="date_prevue" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="event-culture" class="block text-sm font-medium text-gray-700 mb-2">
+                        Culture
+                    </label>
+                    <select id="event-culture" name="type_culture" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        {% for culture in cultures_utilisateur %}
+                        <option value="{{ culture.id }}">{{ culture.nom }}</option>
+                        {% endfor %}
+                        {% if not cultures_utilisateur %}
+                        <option value="">Aucune culture disponible</option>
+                        {% endif %}
+                    </select>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="event-description" class="block text-sm font-medium text-gray-700 mb-2">
+                        Description (optionnelle)
+                    </label>
+                    <textarea id="event-description" name="description" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Détails de l'activité..."></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="hideAddActivityForm()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">AgriSmart</h3>
+                    <p class="text-gray-400">Votre plateforme d'appui conseil agricole pour optimiser vos rendements.</p>
+                </div>
+                <div>
+                    <h4 class="text-md font-semibold mb-4">Services</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="{% url 'monapp:conseils' %}" class="hover:text-white transition-colors">Conseils Agricoles</a></li>
+                        <li><a href="{% url 'monapp:calendrier' %}" class="hover:text-white transition-colors">Calendrier</a></li>
+                        <li><a href="{% url 'monapp:meteo' %}" class="hover:text-white transition-colors">Météo</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-md font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-md font-semibold mb-4">Suivez-nous</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook-f text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-instagram text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 AgriSmart. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- CSS pour le formulaire modal simple -->
+    <style>
+        .form-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+        }
+
+        .activity-form {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            z-index: 1001;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .form-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .form-slide-out {
+            animation: slideOut 0.3s ease-in;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+        }
+
+        .calendar-day {
+            min-height: 120px;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .calendar-day:hover {
+            background-color: #f9fafb;
+        }
+
+        .calendar-day.today {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        .calendar-day.other-month {
+            color: #9ca3af;
+            background-color: #f9fafb;
+        }
+
+        .calendar-day.selected {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .calendar-activity {
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin: 1px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-left: 3px solid rgba(255,255,255,0.3);
+        }
+
+        /* Couleurs spécifiques par type d'activité */
+        .calendar-activity.semis {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .calendar-activity.fertilisation {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+        
+        .calendar-activity.traitement {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
+        .calendar-activity.irrigation {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+        
+        .calendar-activity.entretien {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+        
+        .calendar-activity.recolte {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+        }
+    </style>
+
+    <script>
+        // Variables globales pour le calendrier
+        let currentDate = new Date();
+        const activitesUtilisateur = {{ activites_utilisateur_json|safe }};
+        
+        // Gestion du calendrier
+        function generateCalendar(year, month) {
+            const calendar = document.getElementById('calendar');
+            const currentMonthSpan = document.getElementById('current-month');
+            
+            // Mettre à jour l'affichage du mois
+            const monthNames = [
+                'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+            ];
+            currentMonthSpan.textContent = `${monthNames[month]} ${year}`;
+            
+            // Effacer le calendrier existant sauf les en-têtes
+            const dayHeaders = calendar.querySelectorAll('.bg-gray-50');
+            calendar.innerHTML = '';
+            
+            // Réajouter les en-têtes des jours
+            const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'bg-gray-50 p-4 text-center font-semibold text-gray-700';
+                dayHeader.textContent = day;
+                calendar.appendChild(dayHeader);
+            });
+            
+            // Calculer les jours
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            // Générer les cellules du calendrier
+            for (let i = 0; i < 42; i++) { // 6 semaines * 7 jours
+                const cellDate = new Date(startDate);
+                cellDate.setDate(startDate.getDate() + i);
+                
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day bg-white p-2';
+                
+                // Ajouter les classes selon le type de jour
+                if (cellDate.getMonth() !== month) {
+                    dayCell.classList.add('other-month');
+                } else if (cellDate.toDateString() === new Date().toDateString()) {
+                    dayCell.classList.add('today');
+                }
+                
+                // Numéro du jour
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'font-semibold text-gray-800 mb-2';
+                dayNumber.textContent = cellDate.getDate();
+                dayCell.appendChild(dayNumber);
+                
+                // Ajouter les activités pour ce jour
+                const dayActivities = getActivitiesForDay(cellDate);
+                dayActivities.forEach(activity => {
+                    const activityElement = document.createElement('div');
+                    activityElement.className = `calendar-activity ${activity.type_activite}`;
+                    
+                    // Ajouter des icônes selon le type d'activité
+                    let icon = '';
+                    switch(activity.type_activite) {
+                        case 'semis':
+                            icon = '🌱 ';
+                            break;
+                        case 'fertilisation':
+                            icon = '🌿 ';
+                            break;
+                        case 'traitement':
+                            icon = '🚿 ';
+                            break;
+                        case 'irrigation':
+                            icon = '💧 ';
+                            break;
+                        case 'entretien':
+                            icon = '🔧 ';
+                            break;
+                        case 'recolte':
+                            icon = '🌾 ';
+                            break;
+                        default:
+                            icon = '📋 ';
+                    }
+                    
+                    activityElement.textContent = icon + (activity.type_activite || 'Activité');
+                    activityElement.title = activity.description || activity.type_activite;
+                    dayCell.appendChild(activityElement);
+                });
+                
+                // Ajouter l'événement de clic
+                dayCell.addEventListener('click', () => {
+                    selectDay(cellDate);
+                });
+                
+                calendar.appendChild(dayCell);
+            }
+        }
+        
+        // Obtenir les activités pour un jour donné
+        function getActivitiesForDay(date) {
+            if (!activitesUtilisateur) return [];
+            const dateString = date.toISOString().split('T')[0];
+            return activitesUtilisateur.filter(activity => {
+                const activityDate = new Date(activity.date_prevue).toISOString().split('T')[0];
+                return activityDate === dateString;
+            });
+        }
+        
+        // Sélectionner un jour
+        function selectDay(date) {
+            // Retirer la sélection précédente
+            document.querySelectorAll('.calendar-day.selected').forEach(day => {
+                day.classList.remove('selected');
+            });
+            
+            // Sélectionner le nouveau jour (logique de sélection simple)
+            {% if user.is_authenticated %}
+            document.getElementById('event-date').value = date.toISOString().split('T')[0];
+            {% endif %}
+        }
+        
+        // Navigation du calendrier
+        document.getElementById('prev-month').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        });
+        
+        document.getElementById('next-month').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        });
+        
+        {% if user.is_authenticated %}
+        // Gestion du formulaire
+        function showAddActivityForm() {
+            document.getElementById('form-overlay').style.display = 'block';
+            const form = document.getElementById('activity-form');
+            form.style.display = 'block';
+            form.classList.add('form-slide-in');
+            document.getElementById('form-title').textContent = 'Ajouter une activité';
+            document.getElementById('activity-form-element').reset();
+            document.getElementById('activity-id').value = '';
+        }
+        
+        function hideAddActivityForm() {
+            const form = document.getElementById('activity-form');
+            form.classList.remove('form-slide-in');
+            form.classList.add('form-slide-out');
+            setTimeout(() => {
+                form.style.display = 'none';
+                document.getElementById('form-overlay').style.display = 'none';
+                form.classList.remove('form-slide-out');
+            }, 300);
+        }
+        
+        // Fermer le formulaire en cliquant sur l'overlay
+        document.getElementById('form-overlay').addEventListener('click', hideAddActivityForm);
+        
+        // Gestion des boutons d'édition et suppression
+        function editActivity(activityId) {
+            const activity = activitesUtilisateur.find(a => a.id === activityId);
+            if (activity) {
+                document.getElementById('form-title').textContent = 'Modifier l\'activité';
+                document.getElementById('activity-id').value = activity.id;
+                document.getElementById('event-title').value = activity.type_activite;
+                document.getElementById('event-date').value = activity.date_prevue;
+                document.getElementById('event-culture').value = activity.type_culture_id || activity.type_culture;
+                document.getElementById('event-description').value = activity.description || '';
+                showAddActivityForm();
+            }
+        }
+        
+        function deleteActivity(activityId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette activité ?')) {
+                // Créer un formulaire pour la suppression
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.style.display = 'none';
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'delete';
+                
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'activity_id';
+                idInput.value = activityId;
+                
+                form.appendChild(csrfInput);
+                form.appendChild(actionInput);
+                form.appendChild(idInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        // Gestion du formulaire
+        document.getElementById('activity-form-element').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validation simple
+            const title = document.getElementById('event-title').value;
+            const date = document.getElementById('event-date').value;
+            const culture = document.getElementById('event-culture').value;
+            
+            if (!title || !date || !culture) {
+                alert('Veuillez remplir tous les champs obligatoires.');
+                return;
+            }
+            
+            // Ajouter le champ action selon le contexte
+            const activityId = document.getElementById('activity-id').value;
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = activityId ? 'edit' : 'add';
+            this.appendChild(actionInput);
+            
+            // Soumettre le formulaire
+            this.submit();
+        });
+        {% endif %}
+        
+        // Initialiser le calendrier
+        document.addEventListener('DOMContentLoaded', () => {
+            generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+            
+            // Menu mobile
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

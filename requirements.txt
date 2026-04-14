@@ -1,0 +1,73 @@
+# 🌱 AgriSmart - Dépendances Python
+# Version 2.1.0 - Août 2025
+
+# Framework principal
+Django==5.2.5
+
+# Base de données
+# SQLite est inclus avec Python (développement)
+# PostgreSQL pour la production (décommenter si nécessaire)
+# psycopg2-binary==2.9.9
+
+# Gestion des variables d'environnement (REQUIS)
+python-decouple==3.8
+
+# Traitement d'images pour profils utilisateur (REQUIS)
+Pillow==11.3.0
+
+# API et requêtes HTTP pour l'intégration météo
+requests==2.31.0
+
+# Gestion des fuseaux horaires
+# Django 5.x utilise zoneinfo (stdlib), pytz n'est pas requis.
+
+# Outils de développement (optionnel)
+# django-debug-toolbar==4.2.0
+
+# Tests et qualité de code (optionnel)
+# pytest-django==4.5.2
+# coverage==7.3.0
+
+# Production (optionnel)
+# gunicorn==21.2.0
+# whitenoise==6.5.0
+
+# API et sérialisation (pour futures extensions)
+# djangorestframework==3.14.0
+
+# Sécurité (production)
+# django-cors-headers==4.3.0
+
+# Cache (pour optimisation future)
+# redis==5.0.0
+# django-redis==5.4.0
+
+# ===== DÉPENDANCES ACTUELLEMENT UTILISÉES =====
+# Django==5.2.5          # Framework principal
+# python-decouple==3.8   # Variables d'environnement  
+# Pillow==11.3.0         # Images (utilisé pour les avatars futurs)
+# requests==2.31.0       # API météo (préparation)
+
+# ===== INSTALLATION =====
+# pip install -r requirements.txt
+
+# ===== NOTES =====
+# - SQLite est utilisé en développement (inclus avec Python)
+# - Les dépendances commentées sont prêtes pour les évolutions futures
+# - Décommenter selon les besoins du déploiement
+
+# Pour la production (optionnel)
+# gunicorn==21.2.0
+# whitenoise==6.5.0
+
+# ===== DÉPENDANCES FRONTEND (CDN) =====
+# Ces dépendances sont chargées via CDN dans les templates :
+# - TailwindCSS : https://cdn.tailwindcss.com
+# - Font Awesome 6.4.0 : https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css
+# - AOS (Animate On Scroll) : https://unpkg.com/aos@2.3.1/dist/aos.css et .js
+
+# ===== NOTES IMPORTANTES V2.1.0 =====
+# - python-decouple et Pillow sont REQUIS pour le fonctionnement
+# - Les animations utilisent AOS via CDN (pas d'installation Python nécessaire)
+# - Interface glassmorphism implémentée avec CSS pur
+# - Calendrier modernisé avec JavaScript vanilla

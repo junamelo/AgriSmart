@@ -1,0 +1,19 @@
+@startuml
+left to right direction
+actor Agriculteur
+actor Expert
+
+rectangle "Plateforme AgriSmart" {
+  Agriculteur -- (Se connecter)
+  Agriculteur -- (Créer une demande d'expert)
+  Agriculteur -- (Consulter la liste de ses demandes)
+  Agriculteur -- (Voir le détail d'une demande)
+  Agriculteur -- (Consulter la réponse d'un expert)
+  Agriculteur -- (Évaluer la réponse de l'expert)
+  Agriculteur -- (Naviguer entre les vues)
+  Agriculteur -- (Voir l'historique de ses consultations)
+  
+  (Consulter la réponse d'un expert) ..> (Voir le détail d'une demande) : «inclut»
+  (Évaluer la réponse de l'expert) ..> (Consulter la réponse d'un expert) : «inclut»
+}
+@enduml

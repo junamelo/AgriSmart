@@ -1,0 +1,742 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion / Inscription Agriculteur - AgriSmart</title>
+    <link rel="stylesheet" href="{% static 'monapp/css/style.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+    <style>
+        /* Animations personnalisées */
+        @keyframes slideInFromLeft {
+            0% { transform: translateX(-100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideInFromRight {
+            0% { transform: translateX(100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes fadeInUp {
+            0% { transform: translateY(30px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        
+        .slide-in-left { animation: slideInFromLeft 0.8s ease-out; }
+        .slide-in-right { animation: slideInFromRight 0.8s ease-out; }
+        .fade-in-up { animation: fadeInUp 0.6s ease-out; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gradient-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+        }
+        
+        .form-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            padding-left: 45px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1f2937;
+            font-weight: 500;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #10B981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            background: rgba(255, 255, 255, 1);
+            color: #111827;
+        }
+        
+        .input-field::placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+        
+        .input-field:focus + .input-icon {
+            color: #10B981;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #10B981, #059669);
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffffff, #f3f4f6);
+            color: #10B981;
+            border: 2px solid #10B981;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .toggle-forms {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        .checkbox-custom {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        /* Styles pour les cartes de rôle */
+        .role-option .role-radio:checked + .role-card {
+            border-color: #10B981;
+            background: rgba(16, 185, 129, 0.2);
+            transform: scale(1.02);
+        }
+        
+        .role-option .role-radio:checked + .role-card i {
+            color: #10B981;
+        }
+        
+        .role-specific-fields {
+            transition: all 0.3s ease;
+        }
+        
+        .role-specific-fields.hidden {
+            display: none;
+        }
+        
+        .checkbox-custom:checked {
+            background: #10B981;
+            border-color: #10B981;
+        }
+        
+        .checkbox-custom:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .shape:nth-child(1) {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .shape:nth-child(2) {
+            top: 60%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+        
+        .shape:nth-child(3) {
+            bottom: 30%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+        
+        .culture-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            position: relative;
+        }
+        
+        .culture-chip:hover {
+            background: rgba(16, 185, 129, 0.2);
+            transform: translateY(-1px);
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+        
+        .culture-chip.selected {
+            background: #10B981;
+            color: white;
+            border-color: #059669;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .culture-chip.selected i {
+            color: white;
+        }
+        
+        .culture-chip input[type="checkbox"] {
+            display: none;
+        }
+        
+        .culture-chip input[type="checkbox"]:checked + i + span {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 via-blue-50 to-indigo-100 font-sans min-h-screen overflow-x-hidden">
+    <!-- Background avec formes flottantes -->
+    <div class="floating-shapes">
+        <div class="shape w-64 h-64 bg-green-200 rounded-full"></div>
+        <div class="shape w-48 h-48 bg-blue-200 rounded-full"></div>
+        <div class="shape w-56 h-56 bg-indigo-200 rounded-full"></div>
+    </div>
+
+    <!-- Header avec logo et navigation -->
+    <header class="relative z-20 p-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{% url 'monapp:index' %}" class="flex items-center space-x-3 text-green-700 hover:text-green-800 transition-colors">
+                <div class="relative">
+                    <i class="fas fa-seedling text-3xl"></i>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+                <span class="text-2xl font-bold">AgriSmart</span>
+            </a>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'monapp:expert_login' %}" class="text-purple-600 hover:text-purple-800 transition-colors flex items-center space-x-2 bg-purple-50 px-4 py-2 rounded-full">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Connexion Expert</span>
+                </a>
+                <a href="{% url 'monapp:index' %}" class="text-green-600 hover:text-green-800 transition-colors flex items-center space-x-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Retour à l'accueil</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10 flex items-center justify-center min-h-screen py-12 px-4">
+        <div class="w-full max-w-7xl">
+            <!-- Conteneur principal avec tabs -->
+            <div class="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden">
+                <!-- Tabs Navigation -->
+                <div class="flex bg-gray-100">
+                    <button id="tab-login" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 rounded-tl-3xl bg-white text-green-600 border-b-2 border-green-600">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Connexion
+                    </button>
+                    <button id="tab-register" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 rounded-tr-3xl text-gray-600 hover:text-green-600">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Inscription
+                    </button>
+                </div>
+
+                <div class="flex flex-col lg:flex-row min-h-[600px]">
+                    <!-- Section Connexion -->
+                    <div id="login-section" class="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+                        <div class="max-w-md mx-auto w-full fade-in-up">
+                            <div class="text-center mb-8">
+                                <div class="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                    <i class="fas fa-seedling text-2xl text-white"></i>
+                                </div>
+                                <h2 class="text-3xl font-bold text-gray-800 mb-2">Espace Agriculteur</h2>
+                                <p class="text-gray-600">Connectez-vous à votre espace AgriSmart</p>
+                                <div class="mt-4 flex justify-center space-x-4 text-green-600 text-sm">
+                                    <span><i class="fas fa-check-circle mr-1"></i>Conseils</span>
+                                    <span><i class="fas fa-check-circle mr-1"></i>Planification</span>
+                                    <span><i class="fas fa-check-circle mr-1"></i>Suivi</span>
+                                </div>
+                            </div>
+
+                            <form method="post" action="{% url 'monapp:auth' %}" id="login-form">
+                                {% csrf_token %}
+                                
+                                {% if login_errors %}
+                                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                                        <div class="text-red-700 text-sm">
+                                            {% for error in login_errors %}
+                                                <p>{{ error }}</p>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="input-group">
+                                    <input type="text" id="username" name="username" 
+                                           value="{{ login_form.username.value|default_if_none:'' }}" 
+                                           class="input-field" 
+                                           placeholder="Nom d'utilisateur" required>
+                                    <i class="fas fa-user input-icon"></i>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" 
+                                           class="input-field" 
+                                           placeholder="Mot de passe" required>
+                                    <i class="fas fa-lock input-icon"></i>
+                                </div>
+                                
+                                <div class="flex items-center justify-between mb-6">
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="checkbox" name="remember_me" class="checkbox-custom mr-3">
+                                        <span class="text-sm text-gray-600">Se souvenir de moi</span>
+                                    </label>
+                                    <a href="#" class="text-sm text-green-600 hover:text-green-800 transition-colors">
+                                        Mot de passe oublié ?
+                                    </a>
+                                </div>
+                                
+                                <button type="submit" name="action" value="login" 
+                                        class="w-full btn-primary text-white transition-all duration-300">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>
+                                    Se connecter
+                                </button>
+                            </form>
+                            
+                            <div class="text-center mt-6">
+                                <p class="text-gray-600">Nouveau sur AgriSmart ?</p>
+                                <button onclick="switchToRegister()" class="text-green-600 hover:text-green-800 font-semibold transition-colors">
+                                    Créer un compte agriculteur gratuitement
+                                </button>
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <p class="text-gray-500 text-sm">Vous êtes expert agricole ?</p>
+                                    <a href="{% url 'monapp:expert_login' %}" class="text-purple-600 hover:text-purple-800 font-medium transition-colors text-sm">
+                                        <i class="fas fa-user-graduate mr-1"></i>
+                                        Connexion Expert
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Inscription -->
+                    <div id="register-section" class="w-full lg:w-1/2 gradient-bg text-white p-8 lg:p-12 hidden">
+                        <div class="relative z-10 max-w-md mx-auto w-full fade-in-up">
+                            <div class="text-center mb-8">
+                                <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                    <i class="fas fa-seedling text-2xl text-white"></i>
+                                </div>
+                                <h2 class="text-3xl font-bold mb-2">Rejoignez AgriSmart !</h2>
+                                <p class="text-white/90">Créez votre compte agriculteur et découvrez l'agriculture moderne</p>
+                                <div class="mt-4 flex justify-center space-x-4 text-green-200 text-sm">
+                                    <span><i class="fas fa-check-circle mr-1"></i>Conseils personnalisés</span>
+                                    <span><i class="fas fa-check-circle mr-1"></i>Outils gratuits</span>
+                                    <span><i class="fas fa-check-circle mr-1"></i>Communauté</span>
+                                </div>
+                            </div>
+
+                            <form method="post" action="{% url 'monapp:auth' %}" enctype="multipart/form-data" id="register-form">
+                                {% csrf_token %}
+                                
+                                {% if register_errors %}
+                                <div class="mb-6 p-4 bg-red-500/20 border border-red-300/30 rounded-lg backdrop-blur-sm">
+                                    <div class="flex items-center text-white">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                                        <div class="text-sm">
+                                            {% for error in register_errors %}
+                                                <p>{{ error }}</p>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div class="input-group">
+                                        <input type="text" id="reg-first-name" name="first_name" 
+                                               value="{{ register_form.first_name.value|default_if_none:'' }}" 
+                                               class="input-field" 
+                                               placeholder="Prénom" required>
+                                        <i class="fas fa-user input-icon"></i>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="text" id="reg-last-name" name="last_name" 
+                                               value="{{ register_form.last_name.value|default_if_none:'' }}" 
+                                               class="input-field" 
+                                               placeholder="Nom" required>
+                                        <i class="fas fa-user input-icon"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <input type="text" id="reg-username" name="username" 
+                                           value="{{ register_form.username.value|default_if_none:'' }}" 
+                                           class="input-field" 
+                                           placeholder="Nom d'utilisateur" required>
+                                    <i class="fas fa-at input-icon"></i>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <input type="email" id="reg-email" name="email" 
+                                           value="{{ register_form.email.value|default_if_none:'' }}" 
+                                           class="input-field" 
+                                           placeholder="Adresse email" required>
+                                    <i class="fas fa-envelope input-icon"></i>
+                                </div>
+                                
+                                <!-- Choix du rôle - Agriculteur uniquement -->
+                                <div class="mb-6">
+                                    <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                                        <div class="flex items-center justify-center">
+                                            <div class="text-center">
+                                                <i class="fas fa-seedling text-3xl mb-3 text-green-500"></i>
+                                                <h3 class="text-lg font-semibold text-green-700 mb-2">Inscription Agriculteur</h3>
+                                                <p class="text-sm text-green-600">Accédez aux conseils, outils de planification et expertise agricole</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 text-center">
+                                            <p class="text-sm text-green-600">
+                                                <i class="fas fa-info-circle mr-1"></i>
+                                                Vous êtes expert ? 
+                                                <a href="{% url 'monapp:expert_registration' %}" class="text-purple-600 hover:text-purple-800 font-semibold">
+                                                    Inscrivez-vous ici
+                                                </a>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="role" value="agriculteur">
+                                </div>
+                                
+                                <!-- Champs spécifiques à l'agriculteur -->
+                                <div id="agriculteur-fields" class="role-specific-fields">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div class="input-group">
+                                            <input type="tel" id="reg-contact" name="contact" 
+                                                   value="{{ register_form.contact.value|default_if_none:'' }}" 
+                                                   class="input-field" 
+                                                   placeholder="Téléphone">
+                                            <i class="fas fa-phone input-icon"></i>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="text" id="reg-location" name="localisation" 
+                                                   value="{{ register_form.localisation.value|default_if_none:'' }}" 
+                                                   class="input-field" 
+                                                   placeholder="Localisation">
+                                            <i class="fas fa-map-marker-alt input-icon"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <input type="text" id="reg-area" name="superficie" 
+                                               value="{{ register_form.superficie.value|default_if_none:'' }}" 
+                                               class="input-field" 
+                                               placeholder="Superficie cultivée (ex: 2.5 hectares)">
+                                        <i class="fas fa-ruler-combined input-icon"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium mb-3 text-white/90">
+                                        <i class="fas fa-seedling mr-2"></i>
+                                        Cultures pratiquées (optionnel)
+                                    </label>
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for culture in types_cultures %}
+                                        <label class="culture-chip">
+                                            <input type="checkbox" name="cultures_pratiquees" value="{{ culture.nom|lower }}">
+                                            <i class="fas fa-leaf mr-2 text-xs"></i>
+                                            <span class="text-sm">{{ culture.nom }}</span>
+                                        </label>
+                                        {% empty %}
+                                        <label class="culture-chip">
+                                            <input type="checkbox" name="cultures_pratiquees" value="manioc">
+                                            <i class="fas fa-leaf mr-2 text-xs"></i>
+                                            <span class="text-sm">Manioc</span>
+                                        </label>
+                                        <label class="culture-chip">
+                                            <input type="checkbox" name="cultures_pratiquees" value="igname">
+                                            <i class="fas fa-leaf mr-2 text-xs"></i>
+                                            <span class="text-sm">Igname</span>
+                                        </label>
+                                        <label class="culture-chip">
+                                            <input type="checkbox" name="cultures_pratiquees" value="mais">
+                                            <i class="fas fa-leaf mr-2 text-xs"></i>
+                                            <span class="text-sm">Maïs</span>
+                                        </label>
+                                        <label class="culture-chip">
+                                            <input type="checkbox" name="cultures_pratiquees" value="riz">
+                                            <i class="fas fa-leaf mr-2 text-xs"></i>
+                                            <span class="text-sm">Riz</span>
+                                        </label>
+                                        <label class="culture-chip">
+                                            <input type="checkbox" name="cultures_pratiquees" value="haricot">
+                                            <i class="fas fa-leaf mr-2 text-xs"></i>
+                                            <span class="text-sm">Haricot</span>
+                                        </label>
+                                        <label class="culture-chip">
+                                            <input type="checkbox" name="cultures_pratiquees" value="tomate">
+                                            <i class="fas fa-leaf mr-2 text-xs"></i>
+                                            <span class="text-sm">Tomate</span>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <input type="file" id="reg-photo" name="photo" accept="image/*" 
+                                           class="input-field bg-white/90" 
+                                           style="padding-left: 45px; color: #1f2937; font-weight: 500;">
+                                    <i class="fas fa-camera input-icon"></i>
+                                    <label for="reg-photo" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-600 cursor-pointer">
+                                        <i class="fas fa-upload"></i>
+                                    </label>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                    <div class="input-group">
+                                        <input type="password" id="reg-password" name="password1" 
+                                               class="input-field" 
+                                               placeholder="Mot de passe" required>
+                                        <i class="fas fa-lock input-icon"></i>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="password" id="reg-password2" name="password2" 
+                                               class="input-field" 
+                                               placeholder="Confirmer le mot de passe" required>
+                                        <i class="fas fa-check-circle input-icon"></i>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" name="action" value="register" 
+                                        class="w-full btn-secondary transition-all duration-300 mb-4">
+                                    <i class="fas fa-user-plus mr-2"></i>
+                                    Créer mon compte
+                                </button>
+                            </form>
+                            
+                            <div class="text-center">
+                                <p class="text-white/80">Déjà inscrit ?</p>
+                                <button onclick="switchToLogin()" class="text-white hover:text-green-200 font-semibold transition-colors">
+                                    Se connecter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Debug: Log des soumissions de formulaire
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            console.log('Formulaire d\'inscription soumis');
+            const formData = new FormData(this);
+            console.log('Données du formulaire:', Object.fromEntries(formData));
+        });
+        
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            console.log('Formulaire de connexion soumis');
+        });
+    </script>
+</    <!-- JavaScript pour les interactions -->
+    {% if register_errors %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Basculer vers l'inscription si il y a des erreurs
+            setTimeout(() => {
+                document.getElementById('tab-register').click();
+            }, 100);
+        });
+    </script>
+    {% endif %}
+    
+    <script>
+        function switchToRegister() {
+            document.getElementById('tab-login').classList.remove('bg-white', 'text-green-600', 'border-b-2', 'border-green-600');
+            document.getElementById('tab-login').classList.add('text-gray-600', 'hover:text-green-600');
+            
+            document.getElementById('tab-register').classList.add('bg-white', 'text-green-600', 'border-b-2', 'border-green-600');
+            document.getElementById('tab-register').classList.remove('text-gray-600', 'hover:text-green-600');
+            
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('register-section').classList.remove('hidden');
+        }
+
+        function switchToLogin() {
+            document.getElementById('tab-register').classList.remove('bg-white', 'text-green-600', 'border-b-2', 'border-green-600');
+            document.getElementById('tab-register').classList.add('text-gray-600', 'hover:text-green-600');
+            
+            document.getElementById('tab-login').classList.add('bg-white', 'text-green-600', 'border-b-2', 'border-green-600');
+            document.getElementById('tab-login').classList.remove('text-gray-600', 'hover:text-green-600');
+            
+            document.getElementById('register-section').classList.add('hidden');
+            document.getElementById('login-section').classList.remove('hidden');
+        }
+
+        // Event listeners pour les tabs
+        document.getElementById('tab-login').addEventListener('click', switchToLogin);
+        document.getElementById('tab-register').addEventListener('click', switchToRegister);
+
+        // Animation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.fade-in-up');
+            elements.forEach((el, index) => {
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Animation des formes flottantes
+            const shapes = document.querySelectorAll('.shape');
+            shapes.forEach((shape, index) => {
+                const randomX = Math.random() * 100;
+                const randomY = Math.random() * 100;
+                const randomDelay = Math.random() * 2;
+                
+                shape.style.left = randomX + 'vw';
+                shape.style.top = randomY + 'vh';
+                shape.style.animationDelay = randomDelay + 's';
+            });
+            
+            // Initialiser l'affichage des champs selon le rôle par défaut
+            const selectedRole = document.querySelector('input[name="role"]:checked');
+            if (selectedRole) {
+                const agriculteurFields = document.getElementById('agriculteur-fields');
+                const expertFields = document.getElementById('expert-fields');
+                
+                if (selectedRole.value === 'agriculteur') {
+                    agriculteurFields.classList.remove('hidden');
+                    expertFields.classList.add('hidden');
+                } else if (selectedRole.value === 'expert') {
+                    agriculteurFields.classList.add('hidden');
+                    expertFields.classList.remove('hidden');
+                }
+            }
+        });
+
+        // Animation pour les champs de saisie
+        document.querySelectorAll('.input-field').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.parentElement.classList.remove('focused');
+                }
+            });
+        });
+
+        // Gestion des culture chips
+        document.querySelectorAll('.culture-chip').forEach(chip => {
+            const checkbox = chip.querySelector('input[type="checkbox"]');
+            
+            // État initial
+            if (checkbox && checkbox.checked) {
+                chip.classList.add('selected');
+            }
+            
+            // Gestion du clic
+            chip.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    
+                    if (checkbox.checked) {
+                        chip.classList.add('selected');
+                    } else {
+                        chip.classList.remove('selected');
+                    }
+                }
+            });
+        });
+
+        // Validation du formulaire d'inscription
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            const password1 = document.getElementById('reg-password').value;
+            const password2 = document.getElementById('reg-password2').value;
+            
+            if (password1 !== password2) {
+                e.preventDefault();
+                alert('Les mots de passe ne correspondent pas.');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

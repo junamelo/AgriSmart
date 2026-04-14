@@ -1,0 +1,667 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Météo Locale - AgriSmart</title>
+    <link rel="stylesheet" href="{% static 'monapp/css/style.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            --success-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            --warning-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        .weather-card {
+            background: var(--primary-gradient);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .weather-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .forecast-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .forecast-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .weather-icon {
+            transition: all 0.4s ease;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+        }
+        
+        .weather-icon:hover {
+            transform: scale(1.3) rotate(15deg);
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+        }
+        
+        .glass-card {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 300% 300%;
+            animation: gradientShift 8s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .floating-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .floating-icon {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .weather-detail {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 12px;
+        }
+        
+        .weather-detail:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .search-input::placeholder {
+            color: #9CA3AF;
+        }
+
+        .btn-modern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 16px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .impact-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .impact-card:hover {
+            border-left-color: #10B981;
+            background: rgba(16, 185, 129, 0.05);
+            transform: translateX(4px);
+        }
+
+        .trend-bar {
+            height: 6px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .temperature-display {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.online {
+            background: #10B981;
+        }
+
+        .status-indicator.offline {
+            background: #F59E0B;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="gradient-bg font-sans min-h-screen">
+    <!-- Éléments flottants de fond -->
+    <div class="floating-elements">
+        <i class="fas fa-cloud floating-icon text-6xl" style="top: 10%; left: 5%; animation-delay: 0s;"></i>
+        <i class="fas fa-sun floating-icon text-5xl" style="top: 20%; right: 10%; animation-delay: 1s;"></i>
+        <i class="fas fa-bolt floating-icon text-4xl" style="top: 60%; left: 15%; animation-delay: 2s;"></i>
+        <i class="fas fa-snowflake floating-icon text-5xl" style="bottom: 20%; right: 20%; animation-delay: 3s;"></i>
+        <i class="fas fa-wind floating-icon text-4xl" style="bottom: 10%; left: 10%; animation-delay: 4s;"></i>
+    </div>
+
+    <!-- Header/Navigation -->
+    <header class="glass-card sticky top-0 z-50 backdrop-blur-20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <a href="{% url 'monapp:index' %}" class="flex items-center space-x-3 text-white hover:text-green-200 transition-colors">
+                    <div class="relative">
+                        <i class="fas fa-leaf text-3xl"></i>
+                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                    </div>
+                    <span class="text-2xl font-bold">AgriSmart</span>
+                </a>
+                
+                <nav class="hidden md:flex space-x-8">
+                    <a href="{% url 'monapp:index' %}" class="text-white/80 hover:text-white transition-colors font-medium">Accueil</a>
+                    <a href="{% url 'monapp:conseils' %}" class="text-white/80 hover:text-white transition-colors font-medium">Conseils</a>
+                    <a href="{% url 'monapp:calendrier' %}" class="text-white/80 hover:text-white transition-colors font-medium">Calendrier</a>
+                    <a href="{% url 'monapp:meteo' %}" class="text-white font-bold border-b-2 border-white/50 pb-1">Météo</a>
+                    <a href="{% url 'monapp:compte' %}" class="text-white/80 hover:text-white transition-colors font-medium">Mon Compte</a>
+                </nav>
+                
+                <button id="mobile-menu-button" class="md:hidden text-white">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+            
+            <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+                <a href="{% url 'monapp:index' %}" class="block py-2 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all">Accueil</a>
+                <a href="{% url 'monapp:conseils' %}" class="block py-2 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all">Conseils</a>
+                <a href="{% url 'monapp:calendrier' %}" class="block py-2 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all">Calendrier</a>
+                <a href="{% url 'monapp:meteo' %}" class="block py-2 px-4 text-white font-bold bg-white/20 rounded-lg">Météo</a>
+                <a href="{% url 'monapp:compte' %}" class="block py-2 px-4 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all">Mon Compte</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10">
+        <section class="py-16">
+            <div class="container mx-auto px-4">
+                <!-- Titre avec indicateur de statut -->
+                <div class="text-center mb-12" data-aos="fade-down">
+                    <h1 class="text-5xl md:text-6xl font-bold text-white mb-4 text-shadow">
+                        <i class="fas fa-cloud-sun mr-4 text-yellow-300"></i>
+                        Météo Locale
+                    </h1>
+                    <div class="inline-flex items-center space-x-3 bg-white/20 backdrop-blur-sm rounded-full px-6 py-3">
+                        {% if api_active %}
+                            <div class="status-indicator online"></div>
+                            <span class="text-white font-medium">
+                                <i class="fas fa-wifi mr-2"></i>Données en temps réel
+                            </span>
+                        {% else %}
+                            <div class="status-indicator offline"></div>
+                            <span class="text-white font-medium">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>Mode hors ligne
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Recherche de ville modernisée -->
+                <div class="text-center mb-16" data-aos="fade-up" data-aos-delay="200">
+                    <form method="GET" class="search-container inline-flex items-center space-x-3 max-w-md mx-auto">
+                        <div class="flex-1">
+                            <input type="text" name="city" placeholder="Rechercher une ville..." 
+                                   value="{{ city_requested|default:'' }}"
+                                   class="search-input w-full px-4 py-3">
+                        </div>
+                        <input type="text" name="country" placeholder="Pays" 
+                               value="{{ request.GET.country|default:'TG' }}"
+                               class="search-input w-20 px-3 py-3">
+                        <button type="submit" class="btn-modern">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Carte météo principale modernisée -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8" data-aos="fade-up" data-aos-delay="400">
+                    <!-- Météo actuelle avec design glassmorphism -->
+                    <div class="weather-card rounded-3xl shadow-2xl text-white p-8 relative overflow-hidden">
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start mb-8">
+                                <div>
+                                    <h2 class="text-2xl font-bold mb-2">
+                                        <i class="fas fa-map-marker-alt mr-2 text-yellow-300"></i>
+                                        {{ meteo_actuelle.ville|default:"Lomé" }}
+                                        {% if meteo_actuelle.pays %}
+                                            <span class="text-lg opacity-80">, {{ meteo_actuelle.pays }}</span>
+                                        {% endif %}
+                                    </h2>
+                                    <p class="text-white/80 text-lg">Maintenant</p>
+                                    {% if meteo_actuelle.derniere_maj %}
+                                        <p class="text-white/60 text-sm">Mise à jour: {{ meteo_actuelle.derniere_maj }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                    <div class="temperature-display text-white mb-2">{{ meteo_actuelle.temperature|default:"28" }}°</div>
+                                    <p class="text-lg font-medium">{{ meteo_actuelle.description|default:"Nuageux" }}</p>
+                                    {% if meteo_actuelle.temperature_ressentie %}
+                                        <p class="text-white/70 text-sm">Ressenti: {{ meteo_actuelle.temperature_ressentie }}°C</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-6">
+                                <div class="text-center weather-detail">
+                                    <div class="mb-3">
+                                        <i class="fas fa-wind text-3xl text-blue-200"></i>
+                                    </div>
+                                    <p class="text-white/80 text-sm mb-1">Vent</p>
+                                    <p class="text-xl font-bold">{{ meteo_actuelle.vent|default:"12" }}</p>
+                                    <p class="text-sm text-white/70">km/h</p>
+                                    {% if meteo_actuelle.direction_vent %}
+                                        <p class="text-white/60 text-xs">{{ meteo_actuelle.direction_vent }}°</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-center weather-detail">
+                                    <div class="mb-3">
+                                        <i class="fas fa-tint text-3xl text-cyan-200"></i>
+                                    </div>
+                                    <p class="text-white/80 text-sm mb-1">Humidité</p>
+                                    <p class="text-xl font-bold">{{ meteo_actuelle.humidite|default:"65" }}</p>
+                                    <p class="text-sm text-white/70">%</p>
+                                    {% if meteo_actuelle.pression %}
+                                        <p class="text-white/60 text-xs">{{ meteo_actuelle.pression }} hPa</p>
+                                    {% endif %}
+                                </div>
+                                <div class="text-center weather-detail">
+                                    <div class="mb-3">
+                                        <i class="fas fa-sun text-3xl text-yellow-200"></i>
+                                    </div>
+                                    <p class="text-white/80 text-sm mb-1">Soleil</p>
+                                    <p class="text-sm font-semibold">{{ meteo_actuelle.lever_soleil|default:"6:12" }}</p>
+                                    <p class="text-sm font-semibold">{{ meteo_actuelle.coucher_soleil|default:"18:35" }}</p>
+                                    {% if meteo_actuelle.visibilite %}
+                                        <p class="text-white/60 text-xs">Visibilité: {{ meteo_actuelle.visibilite }} km</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prévisions 5 jours avec design moderne -->
+                    <div class="glass-card rounded-3xl p-8 col-span-1 lg:col-span-2">
+                        <h3 class="text-2xl font-bold text-white mb-8 flex items-center">
+                            <i class="fas fa-calendar-week mr-3 text-blue-300"></i>
+                            Prévisions 5 jours
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                            {% for prevision in previsions_5_jours %}
+                            <div class="forecast-card text-center p-6 rounded-2xl hover:scale-105 transition-all duration-300">
+                                <p class="font-bold text-gray-800 mb-4 text-lg">{{ prevision.jour }}</p>
+                                <div class="mb-4">
+                                    <i class="{{ prevision.icone }} text-5xl weather-icon text-blue-500"></i>
+                                </div>
+                                <div class="mb-3">
+                                    <p class="text-2xl font-bold text-gray-800">{{ prevision.temp_max }}°</p>
+                                    <p class="text-lg text-gray-500">{{ prevision.temp_min }}°</p>
+                                </div>
+                                <div class="flex items-center justify-center space-x-1 text-blue-500">
+                                    <i class="fas fa-cloud-rain text-sm"></i>
+                                    <span class="text-sm font-medium">{{ prevision.probabilite_pluie }}%</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                
+                <!-- Conseil météo modernisé -->
+                {% if conseil_meteo %}
+                <div class="mt-12" data-aos="fade-up" data-aos-delay="600">
+                    <div class="glass-card rounded-3xl p-8 border-l-8 border-yellow-400">
+                        <div class="flex items-start space-x-6">
+                            <div class="flex-shrink-0">
+                                <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-lightbulb text-white text-2xl"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+                                    <i class="fas fa-brain mr-3 text-yellow-300"></i>
+                                    Conseil Météo Intelligent
+                                </h3>
+                                <div class="text-white/90">
+                                    <p class="text-lg font-semibold mb-4 text-yellow-200">{{ conseil_meteo.titre }}</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {% for conseil in conseil_meteo.conseils %}
+                                        <div class="flex items-start space-x-3 p-4 bg-white/10 rounded-xl">
+                                            <i class="fas fa-check-circle text-green-400 mt-1 text-lg"></i>
+                                            <span class="text-white/90">{{ conseil }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Informations supplémentaires modernisées -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16" data-aos="fade-up" data-aos-delay="800">
+                    <!-- Impact agriculture -->
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold text-white mb-8 flex items-center">
+                            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-seedling text-white text-xl"></i>
+                            </div>
+                            Impact Agricole
+                        </h3>
+                        <div class="space-y-4">
+                            {% for impact in impact_agriculture %}
+                            <div class="impact-card flex items-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <div class="flex-shrink-0 mr-4">
+                                    <i class="{{ impact.icon }} text-2xl text-white"></i>
+                                </div>
+                                <span class="flex-1 text-white/90 font-medium">{{ impact.text }}</span>
+                                {% if impact.status == 'good' %}
+                                    <div class="w-3 h-3 bg-green-400 rounded-full ml-3"></div>
+                                {% elif impact.status == 'warning' %}
+                                    <div class="w-3 h-3 bg-red-400 rounded-full ml-3"></div>
+                                {% else %}
+                                    <div class="w-3 h-3 bg-yellow-400 rounded-full ml-3"></div>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="impact-card flex items-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <div class="flex-shrink-0 mr-4">
+                                    <i class="fas fa-water text-2xl text-blue-300"></i>
+                                </div>
+                                <span class="flex-1 text-white/90 font-medium">Conditions favorables pour l'irrigation</span>
+                                <div class="w-3 h-3 bg-green-400 rounded-full ml-3"></div>
+                            </div>
+                            <div class="impact-card flex items-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <div class="flex-shrink-0 mr-4">
+                                    <i class="fas fa-leaf text-2xl text-green-300"></i>
+                                </div>
+                                <span class="flex-1 text-white/90 font-medium">Croissance optimale des cultures</span>
+                                <div class="w-3 h-3 bg-green-400 rounded-full ml-3"></div>
+                            </div>
+                            <div class="impact-card flex items-center p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300">
+                                <div class="flex-shrink-0 mr-4">
+                                    <i class="fas fa-bug text-2xl text-red-300"></i>
+                                </div>
+                                <span class="flex-1 text-white/90 font-medium">Risque modéré de parasites</span>
+                                <div class="w-3 h-3 bg-yellow-400 rounded-full ml-3"></div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Tendances saisonnières -->
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold text-white mb-8 flex items-center">
+                            <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-chart-line text-white text-xl"></i>
+                            </div>
+                            Tendances Saisonnières
+                        </h3>
+                        <div class="space-y-6">
+                            <div class="p-4 bg-white/10 rounded-xl">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-white/90 font-medium">Température moyenne</span>
+                                    <span class="text-2xl font-bold text-orange-300">{{ tendances.temperature_moyenne|default:"29" }}°C</span>
+                                </div>
+                                <div class="trend-bar w-full bg-white/20 rounded-full">
+                                    <div class="h-2 bg-gradient-to-r from-orange-400 to-red-400 rounded-full" style="width: 75%;"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-white/10 rounded-xl">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-white/90 font-medium">Probabilité de pluie</span>
+                                    <span class="text-2xl font-bold text-blue-300">{{ tendances.pluviometrie_prevue|default:"30" }}%</span>
+                                </div>
+                                <div class="trend-bar w-full bg-white/20 rounded-full">
+                                    <div class="h-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full" style="width: 30%;"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-white/10 rounded-xl">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-white/90 font-medium">Humidité moyenne</span>
+                                    <span class="text-2xl font-bold text-teal-300">{{ tendances.humidite_moyenne|default:"68" }}%</span>
+                                </div>
+                                <div class="trend-bar w-full bg-white/20 rounded-full">
+                                    <div class="h-2 bg-gradient-to-r from-teal-400 to-green-400 rounded-full" style="width: 68%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer modernisé -->
+    <footer class="relative z-10 glass-card mt-16">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="relative">
+                            <i class="fas fa-leaf text-green-400 text-3xl"></i>
+                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white">AgriSmart</h3>
+                    </div>
+                    <p class="text-white/80">
+                        Votre plateforme d'appui conseil pour une agriculture moderne et durable.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-6 text-white text-lg">Navigation</h4>
+                    <ul class="space-y-3">
+                        <li><a href="{% url 'monapp:index' %}" class="text-white/80 hover:text-green-400 transition-colors flex items-center"><i class="fas fa-home mr-2"></i>Accueil</a></li>
+                        <li><a href="{% url 'monapp:conseils' %}" class="text-white/80 hover:text-green-400 transition-colors flex items-center"><i class="fas fa-lightbulb mr-2"></i>Conseils</a></li>
+                        <li><a href="{% url 'monapp:calendrier' %}" class="text-white/80 hover:text-green-400 transition-colors flex items-center"><i class="fas fa-calendar mr-2"></i>Calendrier</a></li>
+                        <li><a href="{% url 'monapp:meteo' %}" class="text-green-400 font-semibold flex items-center"><i class="fas fa-cloud-sun mr-2"></i>Météo</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-6 text-white text-lg">Contact</h4>
+                    <ul class="space-y-3 text-white/80">
+                        <li class="flex items-center"><i class="fas fa-envelope text-green-400 mr-3"></i> contact@agrismart.tg</li>
+                        <li class="flex items-center"><i class="fas fa-phone text-green-400 mr-3"></i> +228 XX XX XX XX</li>
+                        <li class="flex items-center"><i class="fas fa-map-marker-alt text-green-400 mr-3"></i> Lomé, Togo</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-6 text-white text-lg">Suivez-nous</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-green-400 hover:text-white transition-all duration-300">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-green-400 hover:text-white transition-all duration-300">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-green-400 hover:text-white transition-all duration-300">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-green-400 hover:text-white transition-all duration-300">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-white/20 mt-12 pt-8 text-center">
+                <p class="text-white/60">
+                    © 2025 AgriSmart. Tous droits réservés. |
+                    <a href="#" class="hover:text-green-400 transition-colors">Politique de confidentialité</a> | 
+                    <a href="#" class="hover:text-green-400 transition-colors">Conditions d'utilisation</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript pour animations et interactivité -->
+    <script>
+        // Initialisation d'AOS
+        AOS.init({
+            duration: 1000,
+            once: true,
+            easing: 'ease-out-cubic'
+        });
+
+        // Menu mobile
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // Animation au scroll pour les éléments fade-in-up
+        function animateOnScroll() {
+            const elements = document.querySelectorAll('.fade-in-up');
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('visible');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', animateOnScroll);
+        window.addEventListener('load', animateOnScroll);
+        
+        // Actualisation automatique de l'heure
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const timeElements = document.querySelectorAll('.current-time');
+            timeElements.forEach(element => {
+                if (element) element.textContent = timeString;
+            });
+        }
+        
+        // Mettre à jour l'heure toutes les minutes
+        setInterval(updateTime, 60000);
+        updateTime();
+
+        // Animation des cartes météo
+        document.querySelectorAll('.forecast-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-12px) scale(1.05)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Animation des barres de tendance
+        function animateTrendBars() {
+            const trendBars = document.querySelectorAll('.trend-bar > div');
+            trendBars.forEach((bar, index) => {
+                setTimeout(() => {
+                    bar.style.width = bar.style.width;
+                    bar.style.transition = 'width 1.5s ease-out';
+                }, index * 200);
+            });
+        }
+
+        // Déclencher l'animation des barres après le chargement
+        window.addEventListener('load', () => {
+            setTimeout(animateTrendBars, 1000);
+        });
+
+        // Effet parallaxe sur les éléments flottants
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const floatingIcons = document.querySelectorAll('.floating-icon');
+            
+            floatingIcons.forEach((icon, index) => {
+                const speed = 0.5 + (index * 0.1);
+                icon.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
+    </script>
+</body>
+</html>

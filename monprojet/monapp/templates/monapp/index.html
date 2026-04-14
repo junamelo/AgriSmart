@@ -1,0 +1,884 @@
+{% load static %}
+{% load user_extras %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriSmart - Plateforme d'appui-conseil agricole</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+    <link rel="stylesheet" href="{% static 'monapp/css/style.css' %}">
+    <style>
+        /* Animations personnalisées */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .float-animation { animation: float 3s ease-in-out infinite; }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #10B981, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-bg {
+            background: linear-gradient(135deg, #F0F9FF 0%, #ECFDF5 50%, #F0FDF4 100%);
+            position: relative;
+        }
+        
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(5, 150, 105, 0.1) 0%, transparent 50%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        /* Style pour les cartes de service cliquables */
+        .card-hover.cursor-pointer:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .card-hover a {
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .stat-counter {
+            font-weight: 700;
+            color: #10B981;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans overflow-x-hidden">
+    <!-- Header/Navigation -->
+    <header class="bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="relative">
+                        <i class="fas fa-leaf text-green-500 text-3xl"></i>
+                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                    </div>
+                    <h1 class="text-2xl font-bold gradient-text">AgriSmart</h1>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="{% url 'monapp:index' %}" class="nav-link text-green-600 font-bold relative group">
+                        Accueil
+                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600 transform scale-x-100 transition-transform"></span>
+                    </a>
+                    <a href="{% url 'monapp:conseils' %}" class="nav-link text-gray-700 hover:text-green-600 relative group transition-colors duration-300">
+                        Conseils
+                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600 transform scale-x-0 group-hover:scale-x-100 transition-transform"></span>
+                    </a>
+                    <a href="{% url 'monapp:calendrier' %}" class="nav-link text-gray-700 hover:text-green-600 relative group transition-colors duration-300">
+                        Calendrier
+                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600 transform scale-x-0 group-hover:scale-x-100 transition-transform"></span>
+                    </a>
+                    <a href="{% url 'monapp:meteo' %}" class="nav-link text-gray-700 hover:text-green-600 relative group transition-colors duration-300">
+                        Météo
+                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600 transform scale-x-0 group-hover:scale-x-100 transition-transform"></span>
+                    </a>
+                    <a href="{% url 'monapp:experts' %}" class="nav-link text-gray-700 hover:text-green-600 relative group transition-colors duration-300">
+                        Experts
+                        <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600 transform scale-x-0 group-hover:scale-x-100 transition-transform"></span>
+                    </a>
+                    {% if user.is_authenticated %}
+                        {% if user|is_user_expert %}
+                        <a href="{% url 'monapp:expert_dashboard' %}" class="nav-link text-gray-700 hover:text-green-600 relative group transition-colors duration-300">
+                            <i class="fas fa-chart-line mr-2"></i>Tableau Expert
+                            <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600 transform scale-x-0 group-hover:scale-x-100 transition-transform"></span>
+                        </a>
+                        {% endif %}
+                        {% if user|is_user_agriculteur %}
+                        <a href="{% url 'monapp:compte' %}" class="nav-link text-gray-700 hover:text-green-600 relative group transition-colors duration-300">
+                            <i class="fas fa-user mr-2"></i>Mon Compte
+                            <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-green-600 transform scale-x-0 group-hover:scale-x-100 transition-transform"></span>
+                        </a>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <a href="{% url 'monapp:admin_validate_experts' %}" class="nav-link text-gray-700 hover:text-blue-600 relative group transition-colors duration-300">
+                            <i class="fas fa-user-shield mr-2"></i>Admin Experts
+                            <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform"></span>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'monapp:logout' %}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full transition-colors duration-300 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                        </a>
+                    {% else %}
+                        <a href="{% url 'monapp:register' %}?role=agriculteur" class="border border-green-600 text-green-600 hover:bg-green-600 hover:text-white px-4 py-2 rounded-full transition-all duration-300 mr-3">
+                            <i class="fas fa-user-plus mr-1"></i> Inscription Agriculteur
+                        </a>
+                        <a href="{% url 'monapp:expert_registration' %}" class="border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-4 py-2 rounded-full transition-all duration-300 mr-3">
+                            <i class="fas fa-user-graduate mr-1"></i> Inscription Expert
+                        </a>
+                        <!-- Menu déroulant de connexion -->
+                        <div class="relative inline-block">
+                            <button id="login-dropdown" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full transition-all duration-300 transform hover:scale-105 flex items-center">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                Connexion
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            <div id="login-dropdown-menu" class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 hidden">
+                                <div class="py-2">
+                                    <a href="{% url 'monapp:auth' %}" class="flex items-center px-4 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 transition-colors">
+                                        <i class="fas fa-seedling mr-3 text-green-600"></i>
+                                        <div>
+                                            <div class="font-medium">Connexion Agriculteur</div>
+                                            <div class="text-xs text-gray-500">Accès aux conseils et outils</div>
+                                        </div>
+                                    </a>
+                                    <hr class="border-gray-200">
+                                    <a href="{% url 'monapp:expert_login' %}" class="flex items-center px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition-colors">
+                                        <i class="fas fa-user-graduate mr-3 text-purple-600"></i>
+                                        <div>
+                                            <div class="font-medium">Connexion Expert</div>
+                                            <div class="text-xs text-gray-500">Interface professionnelle</div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </nav>
+                <button id="mobile-menu-button" class="md:hidden text-gray-700 p-2">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden bg-white py-4 px-4 shadow-lg rounded-lg mt-4 transition-all duration-300">
+                <a href="{% url 'monapp:index' %}" class="block py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">Accueil</a>
+                <a href="{% url 'monapp:conseils' %}" class="block py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">Conseils</a>
+                <a href="{% url 'monapp:calendrier' %}" class="block py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">Calendrier</a>
+                <a href="{% url 'monapp:meteo' %}" class="block py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">Météo</a>
+                <a href="{% url 'monapp:experts' %}" class="block py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">Experts</a>
+                {% if user.is_authenticated %}
+                    {% if user|is_user_expert %}
+                    <a href="{% url 'monapp:expert_dashboard' %}" class="block py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>Tableau Expert
+                    </a>
+                    {% endif %}
+                    {% if user|is_user_agriculteur %}
+                    <a href="{% url 'monapp:compte' %}" class="block py-3 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">
+                        <i class="fas fa-user mr-2"></i>Mon Compte
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'monapp:logout' %}" class="block py-3 text-red-600 hover:bg-red-50 rounded-lg px-3 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                    </a>
+                {% else %}
+                    <a href="{% url 'monapp:register' %}" class="block py-3 text-blue-600 hover:bg-blue-50 rounded-lg px-3 transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i> Inscription Agriculteur
+                    </a>
+                    <a href="{% url 'monapp:expert_registration' %}" class="block py-3 text-purple-600 hover:bg-purple-50 rounded-lg px-3 transition-colors">
+                        <i class="fas fa-user-graduate mr-2"></i> Inscription Expert
+                    </a>
+                    <div class="border-t border-gray-200 my-2"></div>
+                    <div class="px-3 py-2 text-sm font-medium text-gray-500 uppercase tracking-wide">Connexion</div>
+                    <a href="{% url 'monapp:auth' %}" class="block py-3 text-green-600 hover:bg-green-50 rounded-lg px-3 transition-colors">
+                        <i class="fas fa-seedling mr-2"></i>Agriculteur
+                    </a>
+                    <a href="{% url 'monapp:expert_login' %}" class="block py-3 text-purple-600 hover:bg-purple-50 rounded-lg px-3 transition-colors">
+                        <i class="fas fa-user-graduate mr-2"></i>Expert
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="hero-bg py-20 relative overflow-hidden">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col lg:flex-row items-center gap-12">
+                    <div class="lg:w-1/2 space-y-8" data-aos="fade-right">
+                        <div class="space-y-4">
+                            <h2 class="text-5xl lg:text-6xl font-bold text-gray-800 leading-tight">
+                                Votre partenaire pour une 
+                                <span class="gradient-text">agriculture moderne</span>
+                            </h2>
+                            <p class="text-xl text-gray-600 leading-relaxed">
+                                Accédez à des conseils d'experts, planifiez vos activités et optimisez vos rendements avec notre plateforme intelligente d'appui agricole.
+                            </p>
+                        </div>
+                        
+                        <!-- Statistiques rapides -->
+                        <div class="grid grid-cols-3 gap-6 py-6">
+                            <div class="text-center">
+                                <div class="stat-counter text-3xl font-bold" data-target="500">0</div>
+                                <p class="text-sm text-gray-600">Agriculteurs</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="stat-counter text-3xl font-bold" data-target="150">0</div>
+                                <p class="text-sm text-gray-600">Conseils</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="stat-counter text-3xl font-bold" data-target="25">0</div>
+                                <p class="text-sm text-gray-600">Cultures</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-4">
+                            <a href="{% url 'monapp:conseils' %}" class="group bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                                <span class="flex items-center">
+                                    Découvrir les conseils 
+                                    <i class="fas fa-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>
+                                </span>
+                            </a>
+                            {% if not user.is_authenticated %}
+                                <a href="{% url 'monapp:register' %}" class="border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105">
+                                    Rejoindre la communauté
+                                </a>
+                                <a href="{% url 'monapp:register' %}?role=agriculteur" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                                    <i class="fas fa-user-plus mr-2"></i> S'inscrire en tant qu'agriculteur
+                                </a>
+                                <a href="{% url 'monapp:expert_registration' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                                    <i class="fas fa-user-graduate mr-2"></i> S'inscrire en tant qu'expert
+                                </a>
+                            {% else %}
+                                <a href="{% url 'monapp:compte' %}" class="border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105">
+                                    <i class="fas fa-user mr-2"></i> Mon espace
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="lg:w-1/2" data-aos="fade-left">
+                        <div class="relative">
+                            <div class="float-animation">
+                                <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" 
+                                     alt="Agriculteur moderne dans les champs" 
+                                     class="rounded-2xl shadow-2xl w-full h-auto">
+                            </div>
+                            <!-- Éléments décoratifs flottants -->
+                            <div class="absolute -top-6 -right-6 w-20 h-20 bg-green-400 rounded-full opacity-20 animate-pulse"></div>
+                            <div class="absolute -bottom-6 -left-6 w-16 h-16 bg-blue-400 rounded-full opacity-20 animate-pulse" style="animation-delay: 1s;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scroll indicator -->
+            <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                <i class="fas fa-chevron-down text-green-600 text-2xl"></i>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section class="py-16 bg-white" data-aos="fade-up">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-4">Nos services pour votre réussite</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                        Une plateforme complète qui accompagne les agriculteurs à chaque étape de leur activité
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+                    <a href="{% url 'monapp:conseils' %}" class="card-hover bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center group cursor-pointer transition-transform hover:scale-105">
+                        <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-green-200 transition-colors">
+                            <i class="fas fa-lightbulb text-green-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Conseils personnalisés</h3>
+                        <p class="text-gray-600">Recevez des recommandations adaptées à vos cultures et votre région</p>
+                        <div class="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="text-green-600 font-medium text-sm">
+                                Découvrir <i class="fas fa-arrow-right ml-1"></i>
+                            </span>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'monapp:calendrier' %}" class="card-hover bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center group cursor-pointer transition-transform hover:scale-105">
+                        <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-200 transition-colors">
+                            <i class="fas fa-calendar-alt text-blue-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Planification</h3>
+                        <p class="text-gray-600">Organisez vos activités agricoles avec notre calendrier intelligent</p>
+                        <div class="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="text-blue-600 font-medium text-sm">
+                                Planifier <i class="fas fa-arrow-right ml-1"></i>
+                            </span>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'monapp:meteo' %}" class="card-hover bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center group cursor-pointer transition-transform hover:scale-105">
+                        <div class="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-yellow-200 transition-colors">
+                            <i class="fas fa-cloud-sun text-yellow-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Météo agricole</h3>
+                        <p class="text-gray-600">Prévisions météo détaillées pour optimiser vos interventions</p>
+                        <div class="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="text-yellow-600 font-medium text-sm">
+                                Consulter <i class="fas fa-arrow-right ml-1"></i>
+                            </span>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'monapp:experts' %}" class="card-hover bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center group cursor-pointer transition-transform hover:scale-105">
+                        <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-purple-200 transition-colors">
+                            <i class="fas fa-user-tie text-purple-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Experts Agricoles</h3>
+                        <p class="text-gray-600">Consultez nos experts pour des conseils personnalisés et un accompagnement professionnel</p>
+                        <div class="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="text-purple-600 font-medium text-sm">
+                                Consulter <i class="fas fa-arrow-right ml-1"></i>
+                            </span>
+                        </div>
+                    </a>
+                    
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'monapp:compte' %}" class="card-hover bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center group cursor-pointer transition-transform hover:scale-105">
+                    {% else %}
+                        <a href="{% url 'monapp:register' %}" class="card-hover bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center group cursor-pointer transition-transform hover:scale-105">
+                    {% endif %}
+                        <div class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-orange-200 transition-colors">
+                            <i class="fas fa-user-circle text-orange-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Mon Espace Personnel</h3>
+                        <p class="text-gray-600">
+                            {% if user.is_authenticated %}
+                                Accédez à votre tableau de bord personnalisé, gérez vos parcelles et consultez l'historique de vos activités
+                            {% else %}
+                                Rejoignez notre communauté d'agriculteurs et bénéficiez d'un accompagnement personnalisé
+                            {% endif %}
+                        </p>
+                        <div class="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="text-orange-600 font-medium text-sm">
+                                {% if user.is_authenticated %}
+                                    Mon espace <i class="fas fa-arrow-right ml-1"></i>
+                                {% else %}
+                                    Rejoindre <i class="fas fa-arrow-right ml-1"></i>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seasonal Crops Section -->
+        <section class="py-16 bg-gradient-to-br from-gray-50 to-green-50" data-aos="fade-up">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-4">Cultures locales et saisonnières</h2>
+                    <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                        Découvrez les meilleures cultures adaptées à votre région et à la saison actuelle
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {% for culture in cultures_saisonnieres %}
+                    <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 group">
+                        <div class="relative overflow-hidden">
+                            {% if culture.image_url %}
+                                <img src="{{ culture.image_url }}" 
+                                     alt="{{ culture.nom }}" 
+                                     class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                            {% else %}
+                                <!-- Utiliser des images locales basées sur le nom de la culture -->
+                                {% if culture.nom == 'Maïs' %}
+                                    <img src="{% static 'monapp/images/télécharger.jpeg' %}" 
+                                         alt="{{ culture.nom }}" 
+                                         class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                                {% elif culture.nom == 'Manioc' %}
+                                    <img src="{% static 'monapp/images/feuilles-de-manioc-2.jpg.png' %}" 
+                                         alt="{{ culture.nom }}" 
+                                         class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                                {% elif culture.nom == 'Tomate' or culture.nom == 'Tomates' %}
+                                    <img src="{% static 'monapp/images/Tomatoes.jpeg' %}" 
+                                         alt="{{ culture.nom }}" 
+                                         class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                                {% elif culture.nom == 'Haricot' or culture.nom == 'Haricots' %}
+                                    <img src="{% static 'monapp/images/Haricot vert _ Guide complet pour cultiver et entretenir votre potager.jpeg' %}" 
+                                         alt="{{ culture.nom }}" 
+                                         class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                                {% else %}
+                                    <!-- Image par défaut pour les autres cultures -->
+                                    <img src="{% static 'monapp/images/télécharger (1).jpeg' %}" 
+                                         alt="{{ culture.nom }}" 
+                                         class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                                {% endif %}
+                            {% endif %}
+                            <div class="absolute top-4 right-4">
+                                <span class="inline-block bg-{{ culture.statut_couleur }}-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                                    {{ culture.get_statut_saison_display }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">{{ culture.nom }}</h3>
+                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">{{ culture.description|truncatewords:15 }}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    {% if culture.periode_semis_debut %}
+                                        {{ culture.periode_semis_debut }}-{{ culture.periode_semis_fin }}
+                                    {% else %}
+                                        Toute l'année
+                                    {% endif %}
+                                </span>
+                                <button class="text-green-600 hover:text-green-700 font-medium text-sm transition-colors">
+                                    En savoir plus <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <!-- Données par défaut avec vos images locales -->
+                    <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 group">
+                        <div class="relative overflow-hidden">
+                            <img src="{% static 'monapp/images/télécharger.jpeg' %}" 
+                                 alt="Maïs" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute top-4 right-4">
+                                <span class="inline-block bg-green-500 text-white text-xs px-3 py-1 rounded-full font-medium">En saison</span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">Maïs</h3>
+                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">Culture de saison humide, période idéale de plantation. Excellente pour la rotation des cultures.</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">
+                                    <i class="fas fa-calendar mr-1"></i> Avr-Juin
+                                </span>
+                                <button class="text-green-600 hover:text-green-700 font-medium text-sm transition-colors">
+                                    En savoir plus <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 group">
+                        <div class="relative overflow-hidden">
+                            <img src="{% static 'monapp/images/feuilles-de-manioc-2.jpg.png' %}" 
+                                 alt="Manioc" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute top-4 right-4">
+                                <span class="inline-block bg-green-500 text-white text-xs px-3 py-1 rounded-full font-medium">En saison</span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">Manioc</h3>
+                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">Culture résistante, adaptée aux sols pauvres. Très rentable et facile à cultiver.</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">
+                                    <i class="fas fa-calendar mr-1"></i> Mar-Sept
+                                </span>
+                                <button class="text-green-600 hover:text-green-700 font-medium text-sm transition-colors">
+                                    En savoir plus <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 group">
+                        <div class="relative overflow-hidden">
+                            <img src="{% static 'monapp/images/Tomatoes.jpeg' %}" 
+                                 alt="Tomates" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute top-4 right-4">
+                                <span class="inline-block bg-yellow-500 text-white text-xs px-3 py-1 rounded-full font-medium">Fin de saison</span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">Tomates</h3>
+                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">Nécessite un bon ensoleillement et un arrosage régulier. Culture très rentable.</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">
+                                    <i class="fas fa-calendar mr-1"></i> Oct-Fév
+                                </span>
+                                <button class="text-green-600 hover:text-green-700 font-medium text-sm transition-colors">
+                                    En savoir plus <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 group">
+                        <div class="relative overflow-hidden">
+                            <img src="{% static 'monapp/images/Haricot vert _ Guide complet pour cultiver et entretenir votre potager.jpeg' %}" 
+                                 alt="Haricots" class="w-full h-56 object-cover group-hover:scale-110 transition-transform duration-500">
+                            <div class="absolute top-4 right-4">
+                                <span class="inline-block bg-blue-500 text-white text-xs px-3 py-1 rounded-full font-medium">Préparation</span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3">Haricots</h3>
+                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">Culture à cycle court, enrichit le sol en azote. Parfait pour la rotation.</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500">
+                                    <i class="fas fa-calendar mr-1"></i> Nov-Jan
+                                </span>
+                                <button class="text-green-600 hover:text-green-700 font-medium text-sm transition-colors">
+                                    En savoir plus <i class="fas fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="text-center mt-12">
+                    <a href="{% url 'monapp:conseils' %}" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        Voir tous les conseils de culture
+                        <i class="fas fa-arrow-right ml-3"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Inscription Agriculteur -->
+        <section class="py-20 bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden" data-aos="fade-up">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-6">Rejoignez Notre Communauté AgriSmart</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                        Que vous soyez agriculteur ou expert agricole, trouvez votre place dans notre écosystème d'agriculture moderne et collaborative.
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                    <!-- Avantage 1 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+                        <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+                            <i class="fas fa-user-check text-2xl text-blue-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Profil Personnalisé</h3>
+                        <p class="text-gray-600 leading-relaxed">Créez votre profil d'agriculteur avec vos spécialités, votre localisation et vos cultures pour recevoir des conseils adaptés.</p>
+                    </div>
+                    
+                    <!-- Avantage 2 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+                        <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+                            <i class="fas fa-users text-2xl text-green-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Accès aux Experts</h3>
+                        <p class="text-gray-600 leading-relaxed">Consultez nos experts agricoles, posez vos questions spécifiques et recevez des conseils professionnels personnalisés.</p>
+                    </div>
+                    
+                    <!-- Avantage 3 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+                        <div class="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6">
+                            <i class="fas fa-chart-line text-2xl text-yellow-600"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Suivi des Performances</h3>
+                        <p class="text-gray-600 leading-relaxed">Trackez vos cultures, analysez vos rendements et optimisez vos pratiques grâce à nos outils de suivi avancés.</p>
+                    </div>
+                </div>
+                
+                {% if not user.is_authenticated %}
+                <div class="text-center">
+                    <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                        <!-- Carte Agriculteur -->
+                        <div class="bg-white rounded-2xl p-8 shadow-xl">
+                            <div class="mb-6">
+                                <i class="fas fa-seedling text-4xl text-blue-600 mb-4"></i>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-2">Agriculteur</h3>
+                                <p class="text-gray-600">Accédez aux conseils, outils et expertise pour optimiser vos cultures</p>
+                            </div>
+                            <a href="{% url 'monapp:register' %}?role=agriculteur" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center justify-center">
+                                <i class="fas fa-user-plus mr-3"></i>
+                                S'inscrire en tant qu'Agriculteur
+                            </a>
+                        </div>
+                        
+                        <!-- Carte Expert -->
+                        <div class="bg-white rounded-2xl p-8 shadow-xl">
+                            <div class="mb-6">
+                                <i class="fas fa-user-graduate text-4xl text-purple-600 mb-4"></i>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-2">Expert Agricole</h3>
+                                <p class="text-gray-600">Partagez votre expertise et accompagnez les agriculteurs dans leurs projets</p>
+                            </div>
+                            <a href="{% url 'monapp:expert_registration' %}" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center justify-center">
+                                <i class="fas fa-user-graduate mr-3"></i>
+                                S'inscrire en tant qu'Expert
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-500 mt-6">
+                        <i class="fas fa-shield-alt mr-1"></i>
+                        100% gratuit • Sans engagement • Sécurisé
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-20 bg-green-600 relative overflow-hidden" data-aos="fade-up">
+            <div class="absolute inset-0 bg-green-700 opacity-50"></div>
+            <div class="container mx-auto px-4 relative z-10">
+                <div class="text-center text-white">
+                    <h2 class="text-4xl font-bold mb-6">Prêt à révolutionner votre agriculture ?</h2>
+                    <p class="text-xl mb-8 max-w-2xl mx-auto opacity-90">
+                        Rejoignez des centaines d'agriculteurs qui font déjà confiance à AgriSmart pour optimiser leurs récoltes
+                    </p>
+                    {% if not user.is_authenticated %}
+                        <div class="flex flex-wrap justify-center gap-4">
+                            <a href="{% url 'monapp:register' %}" class="bg-white text-green-600 hover:bg-gray-100 px-8 py-4 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                Commencer gratuitement
+                            </a>
+                            <a href="{% url 'monapp:conseils' %}" class="border-2 border-white text-white hover:bg-white hover:text-green-600 px-8 py-4 rounded-xl font-medium transition-all duration-300">
+                                Explorer la plateforme
+                            </a>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'monapp:compte' %}" class="inline-flex items-center bg-white text-green-600 hover:bg-gray-100 px-8 py-4 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                            <i class="fas fa-user mr-3"></i>
+                            Accéder à mon espace
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div class="md:col-span-2">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <i class="fas fa-leaf text-green-500 text-3xl"></i>
+                        <h3 class="text-2xl font-bold gradient-text">AgriSmart</h3>
+                    </div>
+                    <p class="text-gray-300 text-lg leading-relaxed mb-6 max-w-md">
+                        Votre plateforme d'appui conseil pour une agriculture moderne et durable. 
+                        Ensemble, cultivons l'avenir.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-12 h-12 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-facebook-f text-lg"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-twitter text-lg"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-linkedin-in text-lg"></i>
+                        </a>
+                        <a href="#" class="w-12 h-12 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fab fa-instagram text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-lg mb-6 text-green-400">Navigation</h4>
+                    <ul class="space-y-3">
+                        <li><a href="{% url 'monapp:index' %}" class="text-gray-300 hover:text-green-400 transition-colors flex items-center"><i class="fas fa-home mr-2 w-4"></i> Accueil</a></li>
+                        <li><a href="{% url 'monapp:conseils' %}" class="text-gray-300 hover:text-green-400 transition-colors flex items-center"><i class="fas fa-lightbulb mr-2 w-4"></i> Conseils agricoles</a></li>
+                        <li><a href="{% url 'monapp:calendrier' %}" class="text-gray-300 hover:text-green-400 transition-colors flex items-center"><i class="fas fa-calendar mr-2 w-4"></i> Calendrier</a></li>
+                        <li><a href="{% url 'monapp:meteo' %}" class="text-gray-300 hover:text-green-400 transition-colors flex items-center"><i class="fas fa-cloud-sun mr-2 w-4"></i> Météo</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-lg mb-6 text-green-400">Contact</h4>
+                    <ul class="space-y-4">
+                        <li class="flex items-start text-gray-300">
+                            <i class="fas fa-envelope text-green-500 mr-3 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Email</p>
+                                <a href="mailto:contact@agrismart.tg" class="hover:text-green-400 transition-colors">contact@agrismart.tg</a>
+                            </div>
+                        </li>
+                        <li class="flex items-start text-gray-300">
+                            <i class="fas fa-phone text-green-500 mr-3 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Téléphone</p>
+                                <a href="tel:+22892628287" class="hover:text-green-400 transition-colors">+228 92628287</a>
+                            </div>
+                        </li>
+                        <li class="flex items-start text-gray-300">
+                            <i class="fas fa-map-marker-alt text-green-500 mr-3 mt-1"></i>
+                            <div>
+                                <p class="font-medium">Adresse</p>
+                                <p>Lomé, Togo</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-gray-400 text-sm mb-4 md:mb-0">
+                        © 2025 AgriSmart. Tous droits réservés.
+                    </p>
+                    <div class="flex space-x-6 text-sm">
+                        <a href="#" class="text-gray-400 hover:text-green-400 transition-colors">Politique de confidentialité</a>
+                        <a href="#" class="text-gray-400 hover:text-green-400 transition-colors">Conditions d'utilisation</a>
+                        <a href="#" class="text-gray-400 hover:text-green-400 transition-colors">Mentions légales</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true,
+            offset: 100
+        });
+
+        // Menu mobile
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            const icon = this.querySelector('i');
+            
+            mobileMenu.classList.toggle('hidden');
+            
+            // Animation de l'icône
+            if (mobileMenu.classList.contains('hidden')) {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            } else {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            }
+        });
+
+        // Counter animation
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-counter');
+            const speed = 50; // Plus bas = plus rapide
+
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const count = +counter.innerText;
+                const increment = target / speed;
+
+                if (count < target) {
+                    counter.innerText = Math.ceil(count + increment);
+                    setTimeout(() => animateCounters(), 20);
+                } else {
+                    counter.innerText = target + '+';
+                }
+            });
+        }
+
+        // Observer pour déclencher l'animation des compteurs
+        const observerOptions = {
+            threshold: 0.7,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounters();
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        // Observer la section hero
+        const heroSection = document.querySelector('#home');
+        if (heroSection) {
+            observer.observe(heroSection);
+        }
+
+        // Smooth scroll pour les liens d'ancrage
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Parallax effect pour le hero
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallaxElements = document.querySelectorAll('.float-animation');
+            
+            parallaxElements.forEach(element => {
+                const speed = 0.5;
+                element.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
+
+        // Header background on scroll
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 100) {
+                header.classList.add('bg-white/95');
+                header.classList.remove('bg-white/95');
+                header.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+            } else {
+                header.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+            }
+        });
+
+        // Menu déroulant de connexion
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginDropdown = document.getElementById('login-dropdown');
+            const loginDropdownMenu = document.getElementById('login-dropdown-menu');
+            
+            if (loginDropdown && loginDropdownMenu) {
+                // Toggle menu on click
+                loginDropdown.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    loginDropdownMenu.classList.toggle('hidden');
+                    
+                    // Rotate chevron icon
+                    const chevron = loginDropdown.querySelector('.fa-chevron-down');
+                    if (chevron) {
+                        chevron.style.transform = loginDropdownMenu.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+                    }
+                });
+                
+                // Close menu when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!loginDropdown.contains(e.target) && !loginDropdownMenu.contains(e.target)) {
+                        loginDropdownMenu.classList.add('hidden');
+                        const chevron = loginDropdown.querySelector('.fa-chevron-down');
+                        if (chevron) {
+                            chevron.style.transform = 'rotate(0deg)';
+                        }
+                    }
+                });
+                
+                // Close menu on escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        loginDropdownMenu.classList.add('hidden');
+                        const chevron = loginDropdown.querySelector('.fa-chevron-down');
+                        if (chevron) {
+                            chevron.style.transform = 'rotate(0deg)';
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

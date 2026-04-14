@@ -1,0 +1,285 @@
+{% load conseils_extras %}
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Expert - AgriSmart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-4 sm:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- En-tête avec titre et profil expert -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Tableau de Bord Expert</h1>
+                    <p class="text-gray-600 mt-2">Gérez vos consultations et aidez les agriculteurs</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="font-semibold text-gray-800">{{ expert.nom }} {{ expert.prenom }}</p>
+                        <p class="text-sm text-green-600">{{ expert.get_specialite_display }}</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user-tie text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-inbox text-white text-sm"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-gray-600">En attente</p>
+                            <p class="text-2xl font-bold text-blue-600">{{ stats.nouvelles }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-white text-sm"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-gray-600">En cours</p>
+                            <p class="text-2xl font-bold text-yellow-600">{{ stats.en_cours }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check text-white text-sm"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-gray-600">Terminées</p>
+                            <p class="text-2xl font-bold text-green-600">{{ stats.terminees }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-star text-white text-sm"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-gray-600">Note moyenne</p>
+                            <p class="text-2xl font-bold text-purple-600">{{ stats.note_moyenne|floatformat:1 }}/5</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions rapides -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="flex flex-wrap gap-4">
+                    <a href="{% url 'monapp:expert_nouvelles_demandes' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200">
+                        <i class="fas fa-plus-circle mr-2"></i>
+                        Nouvelles Demandes Disponibles
+                    </a>
+                    <a href="{% url 'monapp:index' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-home mr-2"></i>
+                        Retour à l'accueil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <h3 class="text-lg font-semibold text-gray-800">Filtrer les demandes :</h3>
+                <a href="?status=en_attente" 
+                   class="px-4 py-2 rounded-lg border border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors {% if request.GET.status == 'en_attente' %}bg-blue-100{% endif %}">
+                    En attente
+                </a>
+                <a href="?status=acceptee" 
+                   class="px-4 py-2 rounded-lg border border-yellow-300 text-yellow-600 hover:bg-yellow-50 transition-colors {% if request.GET.status == 'acceptee' %}bg-yellow-100{% endif %}">
+                    Acceptées
+                </a>
+                <a href="?status=en_cours" 
+                   class="px-4 py-2 rounded-lg border border-orange-300 text-orange-600 hover:bg-orange-50 transition-colors {% if request.GET.status == 'en_cours' %}bg-orange-100{% endif %}">
+                    En cours
+                </a>
+                <a href="?status=terminee" 
+                   class="px-4 py-2 rounded-lg border border-green-300 text-green-600 hover:bg-green-50 transition-colors {% if request.GET.status == 'terminee' %}bg-green-100{% endif %}">
+                    Terminées
+                </a>
+                <a href="?" 
+                   class="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors {% if not request.GET.status %}bg-gray-100{% endif %}">
+                    Toutes
+                </a>
+            </div>
+        </div>
+
+        <!-- Liste des demandes -->
+        <div class="space-y-4">
+            {% for demande in demandes %}
+            <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-3">
+                            <h3 class="text-xl font-semibold text-gray-800">{{ demande.sujet }}</h3>
+                            <span class="ml-3 px-3 py-1 rounded-full text-sm font-medium
+                                {% if demande.statut == 'en_attente' %}bg-blue-100 text-blue-800
+                                {% elif demande.statut == 'acceptee' %}bg-yellow-100 text-yellow-800
+                                {% elif demande.statut == 'en_cours' %}bg-orange-100 text-orange-800
+                                {% elif demande.statut == 'terminee' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if demande.statut == 'en_attente' %}En attente
+                                {% elif demande.statut == 'acceptee' %}Acceptée
+                                {% elif demande.statut == 'en_cours' %}En cours
+                                {% elif demande.statut == 'terminee' %}Terminée
+                                {% else %}{{ demande.get_statut_display }}{% endif %}
+                            </span>
+                            {% if demande.urgence == 'critique' or demande.urgence == 'elevee' %}
+                            <span class="ml-2 px-2 py-1 bg-red-100 text-red-600 text-xs rounded-full font-medium">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>{{ demande.get_urgence_display }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-600"><strong>Agriculteur :</strong> {{ demande.agriculteur.user.first_name }} {{ demande.agriculteur.user.last_name }}</p>
+                                <p class="text-sm text-gray-600"><strong>Email :</strong> {{ demande.agriculteur.user.email }}</p>
+                                {% if demande.agriculteur.contact %}
+                                <p class="text-sm text-gray-600"><strong>Téléphone :</strong> {{ demande.agriculteur.contact }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600"><strong>Date de demande :</strong> {{ demande.date_creation|date:"d/m/Y à H:i" }}</p>
+                                {% if demande.date_traitement %}
+                                <p class="text-sm text-gray-600"><strong>Date de traitement :</strong> {{ demande.date_traitement|date:"d/m/Y à H:i" }}</p>
+                                {% endif %}
+                                <p class="text-sm text-gray-600"><strong>Urgence :</strong> 
+                                    <span class="{% if demande.urgence == 'critique' %}text-red-600 {% elif demande.urgence == 'elevee' %}text-orange-600 {% elif demande.urgence == 'normale' %}text-yellow-600 {% else %}text-green-600 {% endif %}">
+                                        {{ demande.get_urgence_display }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <p class="text-sm text-gray-600 mb-2"><strong>Message :</strong></p>
+                            <p class="text-gray-700 bg-gray-50 p-3 rounded-lg">{{ demande.description|truncatewords:30 }}</p>
+                        </div>
+
+                        {% if demande.reponse %}
+                        <div class="bg-green-50 p-4 rounded-lg mb-4">
+                            <p class="text-sm text-green-600 font-medium mb-2"><i class="fas fa-reply mr-1"></i> Votre réponse :</p>
+                            <p class="text-gray-700">{{ demande.reponse|truncatewords:20 }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="ml-6 flex flex-col space-y-2">
+                        <a href="{% url 'monapp:expert_demande_detail' demande.id %}" 
+                           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center">
+                            <i class="fas fa-eye mr-1"></i> Voir détails
+                        </a>
+                        
+                        {% if demande.statut == 'en_attente' %}
+                        <button data-demande-id="{{ demande.id }}" class="accepter-demande px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-check mr-1"></i> Accepter
+                        </button>
+                        {% endif %}
+                        
+                        {% if demande.statut == 'acceptee' or demande.statut == 'en_cours' %}
+                        <a href="{% url 'monapp:expert_demande_detail' demande.id %}#reponse" 
+                           class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-center">
+                            <i class="fas fa-reply mr-1"></i> Répondre
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-inbox text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">Aucune demande trouvée</h3>
+                <p class="text-gray-500">Il n'y a actuellement aucune demande de consultation correspondant à vos critères.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if demandes.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex space-x-2">
+                {% if demandes.has_previous %}
+                <a href="?page={{ demandes.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                   class="px-3 py-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Précédent
+                </a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg">
+                    Page {{ demandes.number }} sur {{ demandes.paginator.num_pages }}
+                </span>
+                
+                {% if demandes.has_next %}
+                <a href="?page={{ demandes.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                   class="px-3 py-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Suivant
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- JavaScript pour accepter les demandes -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des boutons d'acceptation
+    document.querySelectorAll('.accepter-demande').forEach(button => {
+        button.addEventListener('click', function() {
+            const demandeId = this.getAttribute('data-demande-id');
+            if (confirm('Êtes-vous sûr de vouloir accepter cette demande de consultation ?')) {
+                fetch(`{% url 'monapp:expert_accepter_demande' 0 %}`.replace('0', demandeId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Erreur lors de l\'acceptation de la demande');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de l\'acceptation de la demande');
+                });
+            }
+        });
+    });
+});
+</script>
+
+<!-- CSRF Token pour AJAX -->
+{% csrf_token %}
+</body>
+</html>

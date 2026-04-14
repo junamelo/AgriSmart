@@ -1,0 +1,237 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ expert.user.get_full_name }} - Expert Agricole - AgriSmart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #10B981, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-leaf text-green-500 text-3xl"></i>
+                    <h1 class="text-2xl font-bold gradient-text">AgriSmart</h1>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="{% url 'monapp:index' %}" class="text-gray-700 hover:text-green-600 transition-colors">Accueil</a>
+                    <a href="{% url 'monapp:conseils' %}" class="text-gray-700 hover:text-green-600 transition-colors">Conseils</a>
+                    <a href="{% url 'monapp:calendrier' %}" class="text-gray-700 hover:text-green-600 transition-colors">Calendrier</a>
+                    <a href="{% url 'monapp:meteo' %}" class="text-gray-700 hover:text-green-600 transition-colors">Météo</a>
+                    <a href="{% url 'monapp:experts' %}" class="text-green-600 font-bold">Experts</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'monapp:compte' %}" class="text-gray-700 hover:text-green-600 transition-colors">Mon Compte</a>
+                        <a href="{% url 'monapp:logout' %}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full transition-colors">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                        </a>
+                    {% else %}
+                        <a href="{% url 'monapp:login' %}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full transition-colors">
+                            Connexion
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Breadcrumb -->
+        <nav class="mb-6">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li><a href="{% url 'monapp:index' %}" class="hover:text-green-600">Accueil</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="{% url 'monapp:experts' %}" class="hover:text-green-600">Experts</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-700">{{ expert.user.get_full_name|default:expert.user.username }}</li>
+            </ol>
+        </nav>
+
+        <!-- Profil Expert -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 p-8">
+                <div class="flex items-center space-x-6">
+                    <div class="flex-shrink-0">
+                        {% if expert.photo %}
+                            <img src="{{ expert.photo.url }}" alt="{{ expert.user.get_full_name }}" 
+                                 class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg">
+                        {% else %}
+                            <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                                <i class="fas fa-user text-green-600 text-3xl"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-white">
+                        <h1 class="text-3xl font-bold mb-2">
+                            {{ expert.user.get_full_name|default:expert.user.username }}
+                        </h1>
+                        <p class="text-green-100 text-lg mb-2">
+                            Expert en {{ expert.get_domaines_expertise_display }}
+                        </p>
+                        <div class="flex items-center space-x-4 text-sm">
+                            <span class="bg-green-500 px-3 py-1 rounded-full">
+                                <i class="fas fa-circle text-green-200 mr-1"></i>
+                                Disponible
+                            </span>
+                            <span>
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Expert certifié
+                            </span>
+                            <span>
+                                <i class="fas fa-tasks mr-1"></i>
+                                {{ demandes_traitees }} demandes traitées
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Informations principales -->
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">
+                            <i class="fas fa-info-circle text-green-600 mr-2"></i>
+                            Informations
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Domaine d'expertise</label>
+                                <p class="text-gray-800">{{ expert.get_domaines_expertise_display }}</p>
+                            </div>
+                            
+                            {% if expert.formation %}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Formation</label>
+                                <p class="text-gray-800">{{ expert.formation }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if expert.contact %}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Contact</label>
+                                <p class="text-gray-800">
+                                    <i class="fas fa-phone mr-2 text-green-600"></i>
+                                    {{ expert.contact }}
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Expérience -->
+                    {% if expert.experience %}
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">
+                            <i class="fas fa-briefcase text-green-600 mr-2"></i>
+                            Expérience
+                        </h2>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <p class="text-gray-700 leading-relaxed">{{ expert.experience }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Statistiques -->
+                <div class="mt-8 pt-8 border-t border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                        Statistiques
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-green-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-green-600">{{ demandes_traitees }}</div>
+                            <div class="text-sm text-gray-600">Demandes traitées</div>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-blue-600">5★</div>
+                            <div class="text-sm text-gray-600">Note moyenne</div>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-purple-600">24h</div>
+                            <div class="text-sm text-gray-600">Temps de réponse</div>
+                        </div>
+                        <div class="bg-orange-50 rounded-lg p-4 text-center">
+                            <div class="text-2xl font-bold text-orange-600">98%</div>
+                            <div class="text-sm text-gray-600">Taux de satisfaction</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            {% if user.is_authenticated %}
+                <a href="{% url 'monapp:contacter_expert' expert.id %}" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium transition-colors text-center">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Contacter cet expert
+                </a>
+            {% else %}
+                <a href="{% url 'monapp:login' %}" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium transition-colors text-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Se connecter pour contacter
+                </a>
+            {% endif %}
+            
+            <a href="{% url 'monapp:experts' %}" class="border border-green-600 text-green-600 hover:bg-green-600 hover:text-white px-8 py-3 rounded-lg font-medium transition-colors text-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour aux experts
+            </a>
+        </div>
+
+        <!-- Section informative -->
+        <div class="mt-12 bg-green-50 rounded-xl p-8">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                    Comment ça marche ?
+                </h2>
+                <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                    Nos experts sont là pour vous accompagner dans tous vos défis agricoles.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-edit text-white text-xl"></i>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 mb-2">1. Décrivez votre problème</h3>
+                        <p class="text-sm text-gray-600">Expliquez clairement votre situation et vos besoins</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-user-tie text-white text-xl"></i>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 mb-2">2. Un expert vous répond</h3>
+                        <p class="text-sm text-gray-600">Recevez une réponse personnalisée sous 24h</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-thumbs-up text-white text-xl"></i>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 mb-2">3. Appliquez les conseils</h3>
+                        <p class="text-sm text-gray-600">Mettez en pratique les recommandations reçues</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
