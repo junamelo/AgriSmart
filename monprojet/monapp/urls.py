@@ -24,6 +24,7 @@ urlpatterns = [
     path('experts/<int:expert_id>/contacter/', views.contacter_expert_view, name='contacter_expert'),
     path('mes-demandes-experts/', views.mes_demandes_experts_view, name='mes_demandes_experts'),
     path('demande-detail/<int:demande_id>/', views.demande_detail_agriculteur, name='demande_detail_agriculteur'),
+    path('demande-detail/<int:demande_id>/discussion-historique/', views.discussion_historique_json, name='discussion_historique_json'),
     path('annuler-demande/<int:demande_id>/', views.annuler_demande_expert, name='annuler_demande_expert'),
     # Interface expert
     path('expert-dashboard/', views.expert_dashboard_view, name='expert_dashboard'),

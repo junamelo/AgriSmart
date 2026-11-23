@@ -347,9 +347,12 @@
                                     <input type="text" id="username" name="username" 
                                            value="{{ login_form.username.value|default_if_none:'' }}" 
                                            class="input-field" 
-                                           placeholder="Nom d'utilisateur" required>
+                                           placeholder="Email ou nom d'utilisateur" required>
                                     <i class="fas fa-user input-icon"></i>
                                 </div>
+                                <p class="-mt-2 mb-4 text-xs text-gray-500">
+                                    Vous pouvez vous connecter avec votre email ou votre nom d'utilisateur.
+                                </p>
                                 
                                 <div class="input-group">
                                     <input type="password" id="password" name="password" 

@@ -254,3 +254,19 @@ class DemandeExpert(models.Model):
         ordering = ['-date_creation']
         verbose_name = "Demande d'expert"
         verbose_name_plural = "Demandes d'experts"
+
+
+class MessageDiscussion(models.Model):
+    demande = models.ForeignKey(DemandeExpert, on_delete=models.CASCADE, related_name='messages_discussion')
+    auteur = models.ForeignKey(User, on_delete=models.CASCADE)
+    contenu = models.TextField()
+    date_envoi = models.DateTimeField(auto_now_add=True)
+    lu = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Message de {self.auteur} sur {self.demande}"
+
+    class Meta:
+        ordering = ['date_envoi']
+        verbose_name = 'Message de discussion'
+        verbose_name_plural = 'Messages de discussion'

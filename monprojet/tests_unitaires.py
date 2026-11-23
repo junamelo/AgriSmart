@@ -20,7 +20,7 @@ from django.utils import timezone
 
 from monapp.models import (
     TypeCulture, Agriculteur, ConseilAgricole,
-    ActiviteAgricole, Expert, DemandeExpert
+    ActiviteAgricole, Expert, DemandeExpert, MessageDiscussion
 )
 from monapp.forms import (
     CustomUserCreationForm, AgriculteurForm,
@@ -301,6 +301,52 @@ class DemandeExpertModelTest(TestCase):
         self.assertEqual(demandes[0], demande2)  # Plus récente en premier
 
 
+class MessageDiscussionModelTest(TestCase):
+    """Tests du modèle MessageDiscussion"""
+
+    def setUp(self):
+        self.user_agri = User.objects.create_user(username='agri_msg', password='pass123!')
+        self.user_expert = User.objects.create_user(username='expert_msg', password='pass123!')
+        self.agriculteur = Agriculteur.objects.create(user=self.user_agri)
+        self.expert = Expert.objects.create(user=self.user_expert, specialite='irrigation')
+        self.demande = DemandeExpert.objects.create(
+            agriculteur=self.agriculteur,
+            expert=self.expert,
+            domaine_demande='irrigation',
+            sujet='Discussion test',
+            description='Besoin de conseils.'
+        )
+
+    def test_creation_message_discussion(self):
+        """Vérifier qu'un message de discussion peut être créé"""
+        message = MessageDiscussion.objects.create(
+            demande=self.demande,
+            auteur=self.user_agri,
+            contenu='Bonjour expert, voici mon problème.'
+        )
+
+        self.assertEqual(message.demande, self.demande)
+        self.assertEqual(message.auteur, self.user_agri)
+        self.assertTrue(message.lu is False)
+
+    def test_ordering_message_discussion(self):
+        """Vérifier l'ordre chronologique des messages"""
+        message1 = MessageDiscussion.objects.create(
+            demande=self.demande,
+            auteur=self.user_agri,
+            contenu='Premier message'
+        )
+        message2 = MessageDiscussion.objects.create(
+            demande=self.demande,
+            auteur=self.user_expert,
+            contenu='Deuxième message'
+        )
+
+        messages = list(MessageDiscussion.objects.filter(demande=self.demande))
+        self.assertEqual(messages[0], message1)
+        self.assertEqual(messages[1], message2)
+
+
 # =====================================================================
 # 2. TESTS DES FORMULAIRES
 # =====================================================================
@@ -470,6 +516,19 @@ class AuthViewTest(TestCase):
         # Devrait rediriger après connexion
         self.assertIn(response.status_code, [200, 302])
 
+    def test_login_valide_avec_email(self):
+        """Vérifier la connexion avec l'email au lieu du username"""
+        self.user.email = 'testuser@example.com'
+        self.user.save()
+
+        response = self.client.post(reverse('monapp:auth'), {
+            'action': 'login',
+            'username': 'testuser@example.com',
+            'password': 'TestPass123!',
+        })
+
+        self.assertIn(response.status_code, [200, 302])
+
     def test_login_invalide(self):
         """Vérifier le rejet d'identifiants incorrects"""
         response = self.client.post(reverse('monapp:auth'), {
@@ -507,6 +566,54 @@ class CompteViewTest(TestCase):
         self.client.login(username='agriuser', password='TestPass123!')
         response = self.client.get(reverse('monapp:compte'))
         self.assertEqual(response.status_code, 200)
+
+
+class ProfilePasswordChangeTest(TestCase):
+    """Tests du changement de mot de passe depuis le profil"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='agri_password',
+            password='OldPass123!',
+            first_name='Alpha',
+            last_name='Test'
+        )
+        Agriculteur.objects.create(user=self.user)
+
+    def test_changement_mot_de_passe_profil(self):
+        """Le mot de passe doit pouvoir être modifié depuis le profil"""
+        self.client.login(username='agri_password', password='OldPass123!')
+        response = self.client.post(reverse('monapp:update_profile'), {
+            'email': 'agri_password@example.com',
+            'contact': '',
+            'localisation': '',
+            'superficie': '',
+            'current_password': 'OldPass123!',
+            'new_password1': 'NewPass123!',
+            'new_password2': 'NewPass123!',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        updated_user = User.objects.get(username='agri_password')
+        self.assertTrue(updated_user.check_password('NewPass123!'))
+
+    def test_changement_mot_de_passe_refuse_si_ancien_incorrect(self):
+        """Le changement doit échouer si l'ancien mot de passe est faux"""
+        self.client.login(username='agri_password', password='OldPass123!')
+        response = self.client.post(reverse('monapp:update_profile'), {
+            'email': 'agri_password@example.com',
+            'contact': '',
+            'localisation': '',
+            'superficie': '',
+            'current_password': 'WrongOldPass!',
+            'new_password1': 'NewPass123!',
+            'new_password2': 'NewPass123!',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        updated_user = User.objects.get(username='agri_password')
+        self.assertTrue(updated_user.check_password('OldPass123!'))
 
 
 class ConseilsViewTest(TestCase):
@@ -644,6 +751,11 @@ class URLResolutionTest(TestCase):
         """Vérifier l'URL du dashboard expert"""
         url = reverse('monapp:expert_dashboard')
         self.assertEqual(url, '/expert-dashboard/')
+
+    def test_discussion_historique_url(self):
+        """Vérifier l'URL fallback de l'historique discussion"""
+        url = reverse('monapp:discussion_historique_json', kwargs={'demande_id': 1})
+        self.assertEqual(url, '/demande-detail/1/discussion-historique/')
 
     def test_logout_url(self):
         """Vérifier l'URL de déconnexion"""
@@ -804,8 +916,53 @@ class FluxInscriptionTest(TestCase):
         })
         # Devrait rediriger vers le compte après inscription
         self.assertIn(response.status_code, [200, 302])
-        # Vérifier que l'utilisateur existe
+        # Vérifier que l'utilisateur existe et possède un profil agriculteur
         self.assertTrue(User.objects.filter(username='new_agri').exists())
+        created_user = User.objects.get(username='new_agri')
+        self.assertTrue(Agriculteur.objects.filter(user=created_user).exists())
+
+    def test_connexion_apres_inscription_avec_email(self):
+        """Tester que l'utilisateur peut se reconnecter avec son email"""
+        self.client.post(reverse('monapp:auth'), {
+            'action': 'register',
+            'username': 'reconnect_agri',
+            'email': 'reconnect@agri.com',
+            'first_name': 'Jean',
+            'last_name': 'Test',
+            'password1': 'AgriPass2025!',
+            'password2': 'AgriPass2025!',
+            'role': 'agriculteur',
+        })
+
+        self.client.logout()
+        response = self.client.post(reverse('monapp:auth'), {
+            'action': 'login',
+            'username': 'reconnect@agri.com',
+            'password': 'AgriPass2025!',
+        })
+
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_connexion_expert_apres_inscription_avec_email(self):
+        """Tester qu'un expert peut se connecter avec son email"""
+        self.client.post(reverse('monapp:auth'), {
+            'action': 'register',
+            'username': 'expert_user_login',
+            'email': 'expert.login@example.com',
+            'first_name': 'Expert',
+            'last_name': 'Login',
+            'password1': 'ExpertPass2025!',
+            'password2': 'ExpertPass2025!',
+            'role': 'expert',
+        })
+
+        self.client.logout()
+        response = self.client.post(reverse('monapp:expert_login'), {
+            'username': 'expert.login@example.com',
+            'password': 'ExpertPass2025!',
+        })
+
+        self.assertIn(response.status_code, [200, 302])
 
 
 class FluxDemandeExpertTest(TestCase):
@@ -879,3 +1036,96 @@ class FluxDemandeExpertTest(TestCase):
         demande.refresh_from_db()
         self.assertEqual(demande.note_satisfaction, 5)
         self.assertEqual(demande.commentaire_satisfaction, 'Excellent conseil, merci !')
+
+
+class DiscussionHistoriqueJsonTest(TestCase):
+    """Tests du fallback JSON pour l'historique de discussion"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user_agri = User.objects.create_user(username='agri_disc', password='TestPass123!')
+        self.user_expert = User.objects.create_user(username='expert_disc', password='TestPass123!')
+        self.user_normal = User.objects.create_user(username='normal_disc', password='TestPass123!')
+        self.agriculteur = Agriculteur.objects.create(user=self.user_agri)
+        self.expert = Expert.objects.create(user=self.user_expert, specialite='irrigation')
+        self.demande = DemandeExpert.objects.create(
+            agriculteur=self.agriculteur,
+            expert=self.expert,
+            domaine_demande='irrigation',
+            sujet='Demande discussion',
+            description='Besoin de dialogue.'
+        )
+        self.message = MessageDiscussion.objects.create(
+            demande=self.demande,
+            auteur=self.user_agri,
+            contenu='Bonjour, j’ai une question.'
+        )
+
+    def test_historique_json_agriculteur(self):
+        """L'agriculteur doit pouvoir récupérer l'historique"""
+        self.client.login(username='agri_disc', password='TestPass123!')
+        response = self.client.get(reverse('monapp:discussion_historique_json', kwargs={'demande_id': self.demande.id}))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload['success'])
+        self.assertEqual(len(payload['messages']), 1)
+        self.assertEqual(payload['messages'][0]['contenu'], 'Bonjour, j’ai une question.')
+
+    def test_historique_json_expert(self):
+        """L'expert assigné doit pouvoir récupérer l'historique"""
+        self.client.login(username='expert_disc', password='TestPass123!')
+        response = self.client.get(reverse('monapp:discussion_historique_json', kwargs={'demande_id': self.demande.id}))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload['success'])
+        self.assertEqual(payload['demande_id'], self.demande.id)
+
+    def test_historique_json_utilisateur_non_autorise(self):
+        """Un utilisateur non concerné doit être refusé"""
+        self.client.login(username='normal_disc', password='TestPass123!')
+        response = self.client.get(reverse('monapp:discussion_historique_json', kwargs={'demande_id': self.demande.id}))
+
+        self.assertEqual(response.status_code, 403)
+
+
+class DiscussionDetailViewTest(TestCase):
+    """Tests de régression des vues de détail avec discussion"""
+
+    def setUp(self):
+        self.client = Client()
+        self.user_agri = User.objects.create_user(username='agri_detail', password='TestPass123!')
+        self.user_expert = User.objects.create_user(username='expert_detail', password='TestPass123!')
+        self.agriculteur = Agriculteur.objects.create(user=self.user_agri)
+        self.expert = Expert.objects.create(user=self.user_expert, specialite='irrigation')
+        self.demande = DemandeExpert.objects.create(
+            agriculteur=self.agriculteur,
+            expert=self.expert,
+            domaine_demande='irrigation',
+            sujet='Vue discussion',
+            description='Vérifier le rendu.'
+        )
+        MessageDiscussion.objects.create(
+            demande=self.demande,
+            auteur=self.user_agri,
+            contenu='Premier message de test.'
+        )
+
+    def test_vue_detail_agriculteur_rend_la_page(self):
+        """La vue détail agriculteur doit rester fonctionnelle"""
+        self.client.login(username='agri_detail', password='TestPass123!')
+        response = self.client.get(reverse('monapp:demande_detail_agriculteur', kwargs={'demande_id': self.demande.id}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Discussion en temps réel')
+        self.assertContains(response, 'Premier message de test.')
+
+    def test_vue_detail_expert_rend_la_page(self):
+        """La vue détail expert doit rester fonctionnelle"""
+        self.client.login(username='expert_detail', password='TestPass123!')
+        response = self.client.get(reverse('monapp:expert_demande_detail', kwargs={'demande_id': self.demande.id}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Discussion en temps réel')
+        self.assertContains(response, 'Premier message de test.')

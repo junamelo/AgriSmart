@@ -1,13 +1,14 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from .models import TypeCulture, ActiviteAgricole, ConseilAgricole, Agriculteur, Expert, DemandeExpert  # Assurez-vous d'importer votre modèle
+from .models import TypeCulture, ActiviteAgricole, ConseilAgricole, Agriculteur, Expert, DemandeExpert, MessageDiscussion  # Assurez-vous d'importer votre modèle
 from django.http import JsonResponse
 import json
 from datetime import datetime
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -19,6 +20,20 @@ from .utils import LoginAttemptLimiter, get_client_ip, get_user_dashboard_url
 logger = logging.getLogger(__name__)
 
 # Create your views here.
+
+
+def authenticate_by_username_or_email(request, identifier, password):
+    """Authenticate a user by username first, then by email if needed."""
+    user = authenticate(request, username=identifier, password=password)
+    if user is not None:
+        return user
+
+    try:
+        matched_user = User.objects.get(email__iexact=identifier)
+    except User.DoesNotExist:
+        return None
+
+    return authenticate(request, username=matched_user.username, password=password)
 
 @login_required
 def compte_view(request):
@@ -654,7 +669,7 @@ def handle_login(request):
         messages.error(request, 'Trop de tentatives de connexion. Réessayez dans quelques minutes.')
         return redirect('monapp:auth')
     
-    user = authenticate(request, username=username, password=password)
+    user = authenticate_by_username_or_email(request, username, password)
     
     if user is not None:
         if user.is_active:
@@ -711,16 +726,15 @@ def handle_register(request):
                 user = user_form.save()
                 
                 # Récupération du rôle choisi
-                role = request.POST.get('role', 'agriculteur')
+                role = user_form.cleaned_data.get('role', 'agriculteur')
                 
                 if role == 'agriculteur':
-                    # Création du profil agriculteur
-                    agriculteur = Agriculteur.objects.create(
-                        user=user,
-                        contact=request.POST.get('contact', ''),
-                        localisation=request.POST.get('localisation', ''),
-                        superficie=request.POST.get('superficie', ''),
-                    )
+                    # Le profil a déjà été créé par le formulaire; on le complète
+                    agriculteur = user.agriculteur
+                    agriculteur.contact = request.POST.get('contact', '')
+                    agriculteur.localisation = request.POST.get('localisation', '')
+                    agriculteur.superficie = request.POST.get('superficie', '')
+                    agriculteur.save()
                     
                     # Gestion de la photo
                     if 'photo' in request.FILES:
@@ -741,22 +755,21 @@ def handle_register(request):
                         agriculteur.cultures_pratiquees.set(cultures)
                 
                 elif role == 'expert':
-                    # Création du profil expert
-                    Expert.objects.create(
-                        user=user,
-                        nom=user.last_name,
-                        prenom=user.first_name,
-                        email=user.email,
-                        specialite=request.POST.get('specialite', ''),
-                        experience=request.POST.get('experience', ''),
-                        bio=request.POST.get('bio', ''),
-                        est_verifie=False  # Les experts doivent être vérifiés par un admin
-                    )
+                    # Le profil a déjà été créé par le formulaire; on le complète
+                    expert = user.expert
+                    expert.nom = user.last_name
+                    expert.prenom = user.first_name
+                    expert.email = user.email
+                    expert.specialite = request.POST.get('specialite', '')
+                    expert.experience = request.POST.get('experience', '')
+                    expert.bio = request.POST.get('bio', '')
+                    expert.est_verifie = False  # Les experts doivent être vérifiés par un admin
+                    expert.save()
                 
                 # Connexion automatique après inscription
                 username = user_form.cleaned_data.get('username')
                 password = user_form.cleaned_data.get('password1')
-                user = authenticate(username=username, password=password)
+                user = authenticate_by_username_or_email(request, username, password)
                 if user:
                     login(request, user)
                     if role == 'agriculteur':
@@ -868,10 +881,10 @@ def expert_registration_view(request):
                         logger.warning("Erreur envoi email: %s", e)
                     
                     # Connexion automatique de l'expert
-                    authenticated_user = authenticate(
-                        request, 
-                        username=form.cleaned_data['email'], 
-                        password=form.cleaned_data['password1']
+                    authenticated_user = authenticate_by_username_or_email(
+                        request,
+                        form.cleaned_data['email'],
+                        form.cleaned_data['password1']
                     )
                     
                     if authenticated_user:
@@ -1260,6 +1273,29 @@ def update_profile(request):
             # Gestion de la photo
             if 'photo' in request.FILES:
                 agriculteur.photo = request.FILES['photo']
+
+            # Mise à jour du mot de passe si demandé
+            current_password = request.POST.get('current_password', '').strip()
+            new_password1 = request.POST.get('new_password1', '')
+            new_password2 = request.POST.get('new_password2', '')
+
+            password_fields_filled = any([current_password, new_password1, new_password2])
+            if password_fields_filled:
+                if not current_password or not new_password1 or not new_password2:
+                    messages.error(request, 'Veuillez remplir l’ancien mot de passe et les deux champs du nouveau mot de passe.')
+                    return redirect('monapp:compte')
+
+                if not user.check_password(current_password):
+                    messages.error(request, 'L’ancien mot de passe est incorrect.')
+                    return redirect('monapp:compte')
+
+                if new_password1 != new_password2:
+                    messages.error(request, 'Les deux nouveaux mots de passe ne correspondent pas.')
+                    return redirect('monapp:compte')
+
+                user.set_password(new_password1)
+                user.save()
+                update_session_auth_hash(request, user)
             
             agriculteur.save()
             
@@ -1531,8 +1567,12 @@ def expert_demande_detail(request, demande_id):
         messages.error(request, 'Accès réservé aux experts uniquement.')
         return redirect('monapp:index')
     
-    # Récupérer la demande assignée à cet expert
-    demande = get_object_or_404(DemandeExpert, id=demande_id, expert=expert)
+    # Récupérer la demande assignée à cet expert avec son fil de discussion
+    demande = get_object_or_404(
+        DemandeExpert.objects.select_related('agriculteur__user', 'expert__user').prefetch_related('messages_discussion__auteur'),
+        id=demande_id,
+        expert=expert,
+    )
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1563,6 +1603,7 @@ def expert_demande_detail(request, demande_id):
     context = {
         'demande': demande,
         'expert': expert,
+        'discussion_messages': demande.messages_discussion.all(),
     }
     
     return render(request, 'monapp/expert_demande_detail.html', context)
@@ -1765,8 +1806,12 @@ def demande_detail_agriculteur(request, demande_id):
         messages.error(request, 'Accès réservé aux agriculteurs.')
         return redirect('monapp:index')
     
-    # Récupérer la demande de cet agriculteur
-    demande = get_object_or_404(DemandeExpert, id=demande_id, agriculteur=agriculteur)
+    # Récupérer la demande de cet agriculteur avec son fil de discussion
+    demande = get_object_or_404(
+        DemandeExpert.objects.select_related('agriculteur__user', 'expert__user').prefetch_related('messages_discussion__auteur'),
+        id=demande_id,
+        agriculteur=agriculteur,
+    )
     
     # Gestion de l'évaluation de satisfaction
     if request.method == 'POST':
@@ -1801,6 +1846,51 @@ def demande_detail_agriculteur(request, demande_id):
     context = {
         'demande': demande,
         'peut_evaluer': demande.statut == 'terminee' and not demande.note_satisfaction,
+        'discussion_messages': demande.messages_discussion.all(),
     }
     
     return render(request, 'monapp/demande_detail_agriculteur.html', context)
+
+
+@login_required
+def discussion_historique_json(request, demande_id):
+    """Retourne l'historique des messages d'une demande pour le fallback AJAX/JSON."""
+    try:
+        user = request.user
+        if hasattr(user, 'agriculteur'):
+            demande = get_object_or_404(
+                DemandeExpert.objects.select_related('agriculteur__user', 'expert__user').prefetch_related('messages_discussion__auteur'),
+                id=demande_id,
+                agriculteur=user.agriculteur,
+            )
+        elif hasattr(user, 'expert'):
+            demande = get_object_or_404(
+                DemandeExpert.objects.select_related('agriculteur__user', 'expert__user').prefetch_related('messages_discussion__auteur'),
+                id=demande_id,
+                expert=user.expert,
+            )
+        else:
+            return JsonResponse({'success': False, 'error': 'Accès non autorisé.'}, status=403)
+
+        messages_data = _serialize_discussion_messages(demande)
+
+        return JsonResponse({
+            'success': True,
+            'demande_id': demande.id,
+            'messages': messages_data,
+        })
+    except DemandeExpert.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Demande introuvable.'}, status=404)
+
+
+def _serialize_discussion_messages(demande):
+    return [
+        {
+            'id': message.id,
+            'contenu': message.contenu,
+            'date_envoi': message.date_envoi.isoformat(),
+            'auteur_id': message.auteur_id,
+            'auteur_nom': message.auteur.get_full_name() or message.auteur.username,
+        }
+        for message in demande.messages_discussion.all()
+    ]

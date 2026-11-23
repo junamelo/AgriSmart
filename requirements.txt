@@ -7,7 +7,7 @@ Django==5.2.5
 # Base de données
 # SQLite est inclus avec Python (développement)
 # PostgreSQL pour la production (décommenter si nécessaire)
-# psycopg2-binary==2.9.9
+psycopg2-binary==2.9.9
 
 # Gestion des variables d'environnement (REQUIS)
 python-decouple==3.8
@@ -42,11 +42,17 @@ requests==2.31.0
 # redis==5.0.0
 # django-redis==5.4.0
 
+# WebSocket et async
+channels==4.1.0
+daphne==4.1.0
+
 # ===== DÉPENDANCES ACTUELLEMENT UTILISÉES =====
 # Django==5.2.5          # Framework principal
 # python-decouple==3.8   # Variables d'environnement  
 # Pillow==11.3.0         # Images (utilisé pour les avatars futurs)
 # requests==2.31.0       # API météo (préparation)
+# channels==4.1.0        # WebSocket support
+# daphne==4.1.0          # ASGI server
 
 # ===== INSTALLATION =====
 # pip install -r requirements.txt
@@ -71,3 +77,4 @@ requests==2.31.0
 # - Les animations utilisent AOS via CDN (pas d'installation Python nécessaire)
 # - Interface glassmorphism implémentée avec CSS pur
 # - Calendrier modernisé avec JavaScript vanilla
+

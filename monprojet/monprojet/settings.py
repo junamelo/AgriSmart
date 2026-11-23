@@ -29,6 +29,11 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
+# Vercel expose l'URL de chaque déploiement via cette variable. Cela laisse
+# fonctionner les aperçus sans devoir modifier ALLOWED_HOSTS à chaque fois.
+if vercel_url := os.environ.get('VERCEL_URL'):
+    ALLOWED_HOSTS.append(vercel_url)
+
 
 # Application definition
 
@@ -39,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'monapp',
 ]
 
@@ -71,6 +77,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'monprojet.wsgi.application'
+ASGI_APPLICATION = 'monprojet.asgi.application'
 
 
 # Database
@@ -184,6 +191,12 @@ CACHES = {
     }
 }
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+
 # Renforcer les paramètres HTTPS en production.
 if not DEBUG:
     SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
@@ -207,12 +220,6 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'weather.log',
-            'formatter': 'verbose',
-        },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
@@ -221,7 +228,9 @@ LOGGING = {
     },
     'loggers': {
         'monapp.weather_service': {
-            'handlers': ['file', 'console'],
+            # Les fonctions Vercel ont un système de fichiers éphémère :
+            # les logs doivent aller vers stdout pour apparaître dans Vercel.
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },

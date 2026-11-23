@@ -78,13 +78,15 @@ class CustomUserCreationForm(UserCreationForm):
             # Créer le profil correspondant selon le rôle
             role = self.cleaned_data.get('role')
             if role == 'agriculteur':
-                Agriculteur.objects.create(user=user)
+                Agriculteur.objects.get_or_create(user=user)
             elif role == 'expert':
-                Expert.objects.create(
+                Expert.objects.get_or_create(
                     user=user,
-                    nom=user.last_name,
-                    prenom=user.first_name,
-                    email=user.email
+                    defaults={
+                        'nom': user.last_name,
+                        'prenom': user.first_name,
+                        'email': user.email,
+                    }
                 )
         return user
 
